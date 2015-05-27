@@ -1,0 +1,120 @@
+
+<!DOCTYPE html>
+<html>
+
+
+
+<script id="vertex-shader" type="x-shader/x-vertex">
+precision mediump float;
+attribute vec4 vPosition;
+attribute vec4 vNormal;
+varying vec3 N, L, E, H;
+uniform mat4 modelViewMatrix;
+uniform mat4 lightModelViewMatrix;
+uniform mat4 projectionMatrix;
+uniform mat4 normalMatrix;
+uniform vec4 lightPosition;
+uniform bool isPhong;
+uniform vec4 sphereAmbientProduct;
+uniform vec4 sphereDiffuseProduct;
+uniform vec4 sphereSpecularProduct;
+uniform float shininess;
+varying vec4 fColor;
+
+void main()
+{
+    vec3 pos = (modelViewMatrix * vPosition).xyz;
+
+    // check for directional light
+    if(lightPosition.w == 0.0) L = normalize((lightModelViewMatrix* lightPosition).xyz);
+    else L = normalize( (lightModelViewMatrix*lightPosition).xyz - pos );
+
+
+
+
+
+    E =  normalize(-pos);
+    N = normalize( (normalMatrix*vNormal).xyz);
+    //N = normalize(modelViewMatrix*vNormal).xyz;
+
+    H = normalize(L + E);
+
+    if(! isPhong){
+    vec4 ambient = sphereAmbientProduct;
+
+    float Kd = max( dot(L, N), 0.0 );
+    //float Kd = dot(L, N);
+    vec4  diffuse = Kd*sphereDiffuseProduct;
+
+    float Ks = pow( max(dot(N, H), 0.0), shininess );
+   // float Ks = pow( dot(N, H), shininess );
+    vec4  specular = Ks * sphereSpecularProduct;
+
+    if( dot(L, N) < 0.0 ) {
+    specular = vec4(0.0, 0.0, 0.0, 1.0);
+    }
+
+    fColor = ambient + diffuse +specular;
+
+    fColor.a = 1.0;
+    }
+
+    gl_Position = projectionMatrix * modelViewMatrix * vPosition;
+
+
+}
+</script>
+
+<script id="fragment-shader" type="x-shader/x-fragment">
+
+precision mediump float;
+uniform vec4 sphereAmbientProduct;
+uniform vec4 sphereDiffuseProduct;
+uniform vec4 sphereSpecularProduct;
+uniform float shininess;
+uniform bool isPhong;
+varying vec3 N, L, E, H;
+varying vec4 fColor;
+
+void
+main()
+{
+    if(isPhong){
+
+    vec4  fColorTemp;
+    vec4 ambient = sphereAmbientProduct;
+
+    float Kd = max( dot(L, N), 0.0 );
+    vec4  diffuse = Kd*sphereDiffuseProduct;
+
+    float Ks = pow( max(dot(N, H), 0.0), shininess );
+    vec4  specular = Ks * sphereSpecularProduct;
+
+    if( dot(L, N) < 0.0 ) {
+    specular = vec4(0.0, 0.0, 0.0, 1.0);
+    }
+
+    fColorTemp = ambient + diffuse +specular;
+
+    fColorTemp.a = 1.0;
+    gl_FragColor = fColorTemp;
+    }
+
+
+else
+    gl_FragColor = fColor;
+}
+</script>
+
+<script type="text/javascript" src="webgl-utils.js"></script>
+<script type="text/javascript" src="initShaders.js"></script>
+<script type="text/javascript" src="MV.js"></script>
+<script type="text/javascript" src="escapeMaze.js"></script>
+
+<body>
+<canvas id="gl-canvas" width="960" height="540">
+Oops ... your browser doesn't support the HTML5 canvas element
+</canvas>
+
+</body>
+</html>
