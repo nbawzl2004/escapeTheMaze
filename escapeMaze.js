@@ -13,21 +13,202 @@ var mySphere = {
     shininess : 30.0,
     position : vec4(0,0,-3,1),
     vertexNum : 0,
-    complexity : 5,
     shadingStyle : 3,  //0:no shading, 1:flat,  2:Gouraud, 3:Phong
-    radius : 2,
     isPhong : true,
+    pointsArray : [],
+    normalsArray : [],
+    ambientProduct : vec4(),
+    diffuseProduct : vec4(),
+    specularProduct : vec4(),
+    modelMatrix : mat4(),
+    modelViewMatrix : mat4(),
 
+    complexity : 5,
+    radius : 2
+
+
+    /* object and functions
+    vBuffer
+    nBuffer
+    init
+    draw
+    */
 
 };
+//functions
+mySphere.init = function() {
+            //call helper function to generate sphere
+            generateSpheres();
 
-    mySphere.pointsArray = [];
-    mySphere.normalsArray = [];
-    mySphere.ambientProduct = vec4();
-    mySphere.diffuseProduct = vec4();
-    mySphere.specularProduct = vec4();
-    mySphere.modelMatrix = mat4();
-    mySphere.modelViewMatrix = mat4();
+            //create buffers for sphere
+            mySphere.vBuffer = gl.createBuffer();
+            mySphere.nBuffer = gl.createBuffer();
+
+            //-----------------------------------------push sphere vertices in buffer--------------------------------------
+
+                gl.bindBuffer(gl.ARRAY_BUFFER,mySphere.vBuffer);
+                gl.bufferData(gl.ARRAY_BUFFER,flatten(mySphere.pointsArray),gl.STATIC_DRAW);
+
+                //link and enable position attribute
+
+                gl.vertexAttribPointer( vPosition, 4, gl.FLOAT, false, 0, 0 );
+                gl.enableVertexAttribArray( vPosition );
+                //unlink buffer
+                gl.bindBuffer(gl.ARRAY_BUFFER,null);
+
+                ////-----------------------------------------push normal vector in buffer--------------------------------------
+                gl.bindBuffer(gl.ARRAY_BUFFER,mySphere.nBuffer);
+                gl.bufferData(gl.ARRAY_BUFFER,flatten(mySphere.normalsArray),gl.STATIC_DRAW);
+
+                //link and enable normal attribute
+
+                gl.vertexAttribPointer( vNormal, 4, gl.FLOAT, false, 0, 0 );
+                gl.enableVertexAttribArray( vNormal);
+                //unlink buffer
+                gl.bindBuffer(gl.ARRAY_BUFFER,null);
+        }
+
+mySphere.draw = function() {
+                // bind ball's buffer
+                gl.bindBuffer( gl.ARRAY_BUFFER, mySphere.vBuffer );
+                gl.vertexAttribPointer( vPosition, 4, gl.FLOAT, false, 0, 0);
+                gl.bindBuffer( gl.ARRAY_BUFFER, mySphere.nBuffer );
+                gl.vertexAttribPointer( vNormal, 4, gl.FLOAT, false, 0, 0 );
+
+                 //transfer values
+                gl.uniform4fv( loc.ambientProductLoc,flatten(mySphere.ambientProduct) );
+                gl.uniform4fv( loc.diffuseProductLoc,flatten(mySphere.diffuseProduct) );
+                gl.uniform4fv( loc.specularProductLoc,flatten(mySphere.specularProduct) );
+                gl.uniform4fv( loc.lightPositionLoc, flatten(light.position) );
+                gl.uniform1f( loc.shininessLoc, mySphere.shininess );
+                gl.uniform1i( loc.isPhongLoc, mySphere.isPhong );
+
+
+                //intergrate modelview matrix
+                mySphere.modelViewMatrix = mult(camera.viewMatrix, mySphere.modelMatrix);
+                mySphere.normalMatrix =  transpose(invert4(mySphere.modelViewMatrix));
+                light.modelViewMatrix = mult(camera.viewMatrix, light.modelMatrix);
+
+                // transfer data
+                //sphere
+                gl.uniformMatrix4fv(loc.modelViewMatrixLoc, false, flatten(mySphere.modelViewMatrix) );
+                gl.uniformMatrix4fv(loc.normalMatrixLoc, false, flatten(mySphere.normalMatrix) );
+
+                //light
+                gl.uniformMatrix4fv(loc.lightModelViewMatrixLoc, false, flatten(light.modelViewMatrix));
+                gl.uniform4fv(loc.lightPositionLoc, flatten(light.position));
+
+                //projection matrix
+                gl.uniformMatrix4fv(loc.projectionMatrixLoc, false, flatten(camera.projectionMatrix) );
+
+                //draw sphere
+                    for(var j=0; j < mySphere.vertexNum; j+=3){
+                    gl.drawArrays(gl.TRIANGLES, j, 3);
+                }
+            }
+
+
+var basePlane = {
+
+    limit : 30,
+    pointsArray : [],
+    normalsArray : [],
+    ambient : vec4(1.0, 1.0, 0.0, 1.0),
+    diffuse : vec4(1.0, 1.0, 1.0, 1.0),
+    specular : vec4(1.0, 1.0, 1.0, 1.0),
+    shininess : 30.0,
+    ambientProduct : vec4(),
+    diffuseProduct : vec4(),
+    specularProduct : vec4(),
+    modelMatrix : mat4(),
+    modelViewMatrix : mat4(),
+    position : vec4(0,0,0,1),
+    vertexNum : 6,
+    shadingStyle : 3,  //0:no shading, 1:flat,  2:Gouraud, 3:Phong
+    isPhong : true,
+
+    /*
+    vBuffer,
+    nBuffer,
+    init,
+    draw
+    */
+
+    };
+//function
+basePlane.init = function(){
+    basePlane.pointsArray = [  vec4( this.limit,0,this.limit,1),
+                                                vec4(this.limit,0,-this.limit,1),
+                                                vec4(-this.limit,0,this.limit,1),
+                                                vec4(-this.limit,0,-this.limit,1),
+                                                vec4(-this.limit,0,this.limit,1),
+                                                vec4(this.limit,0,-this.limit,1) ];
+    basePlane.normalsArray = [   vec4(0,1,0,0),
+                                                    vec4(0,1,0,0),
+                                                    vec4(0,1,0,0),
+                                                    vec4(0,1,0,0),
+                                                    vec4(0,1,0,0),
+                                                    vec4(0,1,0,0) ];
+
+
+    basePlane.vBuffer = gl.createBuffer();
+    basePlane.nBuffer = gl.createBuffer();
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, basePlane.vBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(basePlane.pointsArray), gl.STATIC_DRAW);
+    gl.vertexAttribPointer( vPosition, 4, gl.FLOAT, false, 0, 0 );
+    gl.enableVertexAttribArray( vPosition );
+    gl.bindBuffer(gl.ARRAY_BUFFER,null);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER,basePlane.nBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER,flatten(basePlane.normalsArray),gl.STATIC_DRAW);
+    gl.vertexAttribPointer( vNormal, 4, gl.FLOAT, false, 0, 0 );
+    gl.enableVertexAttribArray( vNormal);
+    gl.bindBuffer(gl.ARRAY_BUFFER,null);
+
+    basePlane.ambientProduct = mult(basePlane.ambient, light.ambient);
+    basePlane.diffuseProduct = mult(basePlane.diffuse, light.diffuse);
+    basePlane.specularProduct = mult(basePlane.specular, light.specular);
+}
+
+basePlane.draw = function() {
+    gl.bindBuffer( gl.ARRAY_BUFFER, basePlane.vBuffer );
+    gl.vertexAttribPointer( vPosition, 4, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer( gl.ARRAY_BUFFER, basePlane.nBuffer );
+    gl.vertexAttribPointer( vNormal, 4, gl.FLOAT, false, 0, 0 );
+
+    //*************
+    gl.uniform4fv( loc.lightPositionLoc, flatten(light.position) );
+
+    gl.uniform4fv( loc.ambientProductLoc,flatten(basePlane.ambientProduct) );
+    gl.uniform4fv( loc.diffuseProductLoc,flatten(basePlane.diffuseProduct) );
+    gl.uniform4fv( loc.specularProductLoc,flatten(basePlane.specularProduct) );
+    gl.uniform1f( loc.shininessLoc, basePlane.shininess );
+    gl.uniform1i( loc.isPhongLoc, basePlane.isPhong );
+
+    basePlane.modelViewMatrix = mult(camera.viewMatrix, basePlane.modelMatrix);
+    basePlane.normalMatrix =  transpose(invert4(basePlane.modelViewMatrix));
+
+    //*************
+    light.modelViewMatrix = mult(camera.viewMatrix, light.modelMatrix);
+
+    gl.uniformMatrix4fv(loc.modelViewMatrixLoc, false, flatten(basePlane.modelViewMatrix) );
+    gl.uniformMatrix4fv(loc.normalMatrixLoc, false, flatten(basePlane.normalMatrix) );
+
+    //*************
+    gl.uniformMatrix4fv(loc.lightModelViewMatrixLoc, false, flatten(light.modelViewMatrix));
+    gl.uniform4fv(loc.lightPositionLoc, flatten(light.position));
+
+    //projection matrix
+    gl.uniformMatrix4fv(loc.projectionMatrixLoc, false, flatten(camera.projectionMatrix) );
+
+    for(var j=0; j < basePlane.vertexNum; j+=3){
+                    gl.drawArrays(gl.TRIANGLES, j, 3);
+                }
+
+}
+
+
 
 
 // light Object
@@ -39,6 +220,8 @@ var light = {
     modelMatrix : mat4(),
     modelViewMatrix : mat4()
 };
+
+
 
 //camera Object
 var camera = {
@@ -53,12 +236,19 @@ var camera = {
 
 // loc Object, storing locations for everything need to be passed to shader
 var loc = new Object();
+loc.getAllUniformLoc = function(){
+    loc.modelViewMatrixLoc = gl.getUniformLocation( program, "modelViewMatrix" );
+    loc.projectionMatrixLoc = gl.getUniformLocation( program, "projectionMatrix" );
+    loc.normalMatrixLoc = gl.getUniformLocation( program, "normalMatrix" );
+    loc.lightModelViewMatrixLoc = gl.getUniformLocation(program, "lightModelViewMatrix");
+    loc.ambientProductLoc =  gl.getUniformLocation(program, "ambientProduct");
+    loc.diffuseProductLoc =  gl.getUniformLocation(program, "diffuseProduct");
+    loc.specularProductLoc =  gl.getUniformLocation(program, "specularProduct");
+    loc.positionLoc = gl.getUniformLocation(program, "lightPosition");
+    loc.shininessLoc =  gl.getUniformLocation(program, "shininess");
+    loc.isPhongLoc =  gl.getUniformLocation(program, "isPhong");
 
-//sphere generator information
-    var va = vec4(0.0, 0.0, -1.0,1);
-    var vb = vec4(0.0, 0.942809, 0.333333, 1);
-    var vc = vec4(-0.816497, -0.471405, 0.333333, 1);
-    var vd = vec4(0.816497, -0.471405, 0.333333,1);
+}
 
 
 function triangle(a, b, c, n) {
@@ -99,7 +289,6 @@ function triangle(a, b, c, n) {
 
     break;
     }
-
 }
 
 function divideTriangle(a, b, c, count, n) {
@@ -132,12 +321,17 @@ function tetrahedron(a, b, c, d, n) {
 
 function generateSpheres(){
 
+    //sphere generator information
+    var va = vec4(0.0, 0.0, -1.0,1);
+    var vb = vec4(0.0, 0.942809, 0.333333, 1);
+    var vc = vec4(-0.816497, -0.471405, 0.333333, 1);
+    var vd = vec4(0.816497, -0.471405, 0.333333,1);
+
     tetrahedron(va,vb,vc,vd,0);
 
     mySphere.ambientProduct = mult(mySphere.ambient, light.ambient);
     mySphere.diffuseProduct = mult(mySphere.diffuse, light.diffuse);
     mySphere.specularProduct = mult(mySphere.specular, light.specular);
-
 }
 
 
@@ -157,53 +351,21 @@ window.onload = function init() {
     program = initShaders( gl, "vertex-shader", "fragment-shader" );
     gl.useProgram( program );
 
-    //create buffers for sphere
-    mySphere.vBuffer = gl.createBuffer();
-    mySphere.nBuffer = gl.createBuffer();
-
-    generateSpheres();
 
 
+    vPosition = gl.getAttribLocation( program, "vPosition" );
+    vNormal = gl.getAttribLocation( program, "vNormal" );
 
-        //-----------------------------------------push sphere vertices in buffer--------------------------------------
+    //init all objects
+    mySphere.init();
+    basePlane.init();
 
-        gl.bindBuffer(gl.ARRAY_BUFFER,mySphere.vBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER,flatten(mySphere.pointsArray),gl.STATIC_DRAW);
 
-        //link and enable position attribute
-        vPosition = gl.getAttribLocation( program, "vPosition" );
-        gl.vertexAttribPointer( vPosition, 4, gl.FLOAT, false, 0, 0 );
-        gl.enableVertexAttribArray( vPosition );
-        //unlink buffer
-        gl.bindBuffer(gl.ARRAY_BUFFER,null);
-
-        ////-----------------------------------------push normal vector in buffer--------------------------------------
-        gl.bindBuffer(gl.ARRAY_BUFFER,mySphere.nBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER,flatten(mySphere.normalsArray),gl.STATIC_DRAW);
-
-        //link and enable normal attribute
-        vNormal = gl.getAttribLocation( program, "vNormal" );
-        gl.vertexAttribPointer( vNormal, 4, gl.FLOAT, false, 0, 0 );
-        gl.enableVertexAttribArray( vNormal);
-        //unlink buffer
-        gl.bindBuffer(gl.ARRAY_BUFFER,null);
+    //get Locs
+    loc.getAllUniformLoc();
 
 
 
-
-    // link varialbe in shader to variable in js
-    //This is done here because they are only need to be called once. They will
-    //be used in render
-    loc.modelViewMatrixLoc = gl.getUniformLocation( program, "modelViewMatrix" );
-    loc.projectionMatrixLoc = gl.getUniformLocation( program, "projectionMatrix" );
-    loc.normalMatrixLoc = gl.getUniformLocation( program, "normalMatrix" );
-    loc.lightModelViewMatrixLoc = gl.getUniformLocation(program, "lightModelViewMatrix");
-    loc.sphereAmbientProductLoc =  gl.getUniformLocation(program, "sphereAmbientProduct");
-    loc.sphereDiffuseProductLoc =  gl.getUniformLocation(program, "sphereDiffuseProduct");
-    loc.sphereSpecularProductLoc =  gl.getUniformLocation(program, "sphereSpecularProduct");
-    loc.positionLoc = gl.getUniformLocation(program, "lightPosition");
-    loc.shininessLoc =  gl.getUniformLocation(program, "shininess");
-    loc.isPhongLoc =  gl.getUniformLocation(program, "isPhong");
 
     // setup projection matrix
      camera.projectionMatrix = perspective(camera.fovy, camera.aspect, camera.near, camera.far);
@@ -218,42 +380,12 @@ function render(){
     //clean canvas
     gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    // bind ball's buffer
-    gl.bindBuffer( gl.ARRAY_BUFFER, mySphere.vBuffer );
-    gl.vertexAttribPointer( vPosition, 4, gl.FLOAT, false, 0, 0);
-    gl.bindBuffer( gl.ARRAY_BUFFER, mySphere.nBuffer );
-    gl.vertexAttribPointer( vNormal, 4, gl.FLOAT, false, 0, 0 );
+    mySphere.draw();
+    basePlane.draw();
 
-     //transfer values
-        gl.uniform4fv( loc.sphereAmbientProductLoc,flatten(mySphere.ambientProduct) );
-        gl.uniform4fv( loc.sphereDiffuseProductLoc,flatten(mySphere.diffuseProduct) );
-        gl.uniform4fv( loc.sphereSpecularProductLoc,flatten(mySphere.specularProduct) );
-        gl.uniform4fv( loc.lightPositionLoc, flatten(light.position) );
-        gl.uniform1f( loc.shininessLoc, mySphere.shininess );
-        gl.uniform1i( loc.isPhongLoc, mySphere.isPhong );
-
-
-        //intergrate modelview matrix
-        mySphere.modelViewMatrix = mult(camera.viewMatrix, mySphere.modelMatrix);
-        mySphere.normalMatrix =  transpose(invert4(mySphere.modelViewMatrix));
-        light.modelViewMatrix = mult(camera.viewMatrix, light.modelMatrix);
-
-        // transfer data
-        //sphere
-        gl.uniformMatrix4fv(loc.modelViewMatrixLoc, false, flatten(mySphere.modelViewMatrix) );
-        gl.uniformMatrix4fv(loc.normalMatrixLoc, false, flatten(mySphere.normalMatrix) );
-
-        //light
-        gl.uniformMatrix4fv(loc.lightModelViewMatrixLoc, false, flatten(light.modelViewMatrix));
-        gl.uniform4fv(loc.lightPositionLoc, flatten(light.position));
-
-        //projection matrix
-        gl.uniformMatrix4fv(loc.projectionMatrixLoc, false, flatten(camera.projectionMatrix) );
-
-
-        for(var j=0; j < mySphere.vertexNum; j+=3){
-            gl.drawArrays(gl.TRIANGLES, j, 3);
-        }
+    setTimeout(
+        function (){requestAnimFrame(render);}, 1000/60
+    );
 }
 
 
@@ -320,4 +452,5 @@ window.onkeydown = function(event){
 
 function testFun(){
     mySphere.modelMatrix = mult(translate(0,0,-3), mySphere.modelMatrix);
+    basePlane.modelMatrix = mult(translate(0,-3,0), basePlane.modelMatrix);
 }

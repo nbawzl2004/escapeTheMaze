@@ -15,9 +15,9 @@ uniform mat4 projectionMatrix;
 uniform mat4 normalMatrix;
 uniform vec4 lightPosition;
 uniform bool isPhong;
-uniform vec4 sphereAmbientProduct;
-uniform vec4 sphereDiffuseProduct;
-uniform vec4 sphereSpecularProduct;
+uniform vec4 ambientProduct;
+uniform vec4 diffuseProduct;
+uniform vec4 specularProduct;
 uniform float shininess;
 varying vec4 fColor;
 
@@ -30,9 +30,6 @@ void main()
     else L = normalize( (lightModelViewMatrix*lightPosition).xyz - pos );
 
 
-
-
-
     E =  normalize(-pos);
     N = normalize( (normalMatrix*vNormal).xyz);
     //N = normalize(modelViewMatrix*vNormal).xyz;
@@ -40,15 +37,15 @@ void main()
     H = normalize(L + E);
 
     if(! isPhong){
-    vec4 ambient = sphereAmbientProduct;
+    vec4 ambient = ambientProduct;
 
     float Kd = max( dot(L, N), 0.0 );
     //float Kd = dot(L, N);
-    vec4  diffuse = Kd*sphereDiffuseProduct;
+    vec4  diffuse = Kd*diffuseProduct;
 
     float Ks = pow( max(dot(N, H), 0.0), shininess );
    // float Ks = pow( dot(N, H), shininess );
-    vec4  specular = Ks * sphereSpecularProduct;
+    vec4  specular = Ks * specularProduct;
 
     if( dot(L, N) < 0.0 ) {
     specular = vec4(0.0, 0.0, 0.0, 1.0);
@@ -68,9 +65,9 @@ void main()
 <script id="fragment-shader" type="x-shader/x-fragment">
 
 precision mediump float;
-uniform vec4 sphereAmbientProduct;
-uniform vec4 sphereDiffuseProduct;
-uniform vec4 sphereSpecularProduct;
+uniform vec4 ambientProduct;
+uniform vec4 diffuseProduct;
+uniform vec4 specularProduct;
 uniform float shininess;
 uniform bool isPhong;
 varying vec3 N, L, E, H;
@@ -82,13 +79,13 @@ main()
     if(isPhong){
 
     vec4  fColorTemp;
-    vec4 ambient = sphereAmbientProduct;
+    vec4 ambient = ambientProduct;
 
     float Kd = max( dot(L, N), 0.0 );
-    vec4  diffuse = Kd*sphereDiffuseProduct;
+    vec4  diffuse = Kd*diffuseProduct;
 
     float Ks = pow( max(dot(N, H), 0.0), shininess );
-    vec4  specular = Ks * sphereSpecularProduct;
+    vec4  specular = Ks * specularProduct;
 
     if( dot(L, N) < 0.0 ) {
     specular = vec4(0.0, 0.0, 0.0, 1.0);
