@@ -725,3 +725,14 @@ function invert4(a) {
 
     return result;
 };
+
+function multv(m, a){
+    var out = mat4();
+    var x = a[0], y = a[1], z = a[2], w = a[3];
+    out[0] = m[0][0] * x + m[0][1] * y + m[0][2] * z + m[0][3] * w;
+    out[1] = m[1][0] * x + m[1][1] * y + m[1][2] * z + m[1][3] * w;
+    out[2] = m[2][0] * x + m[2][1] * y + m[2][2] * z + m[2][3] * w;
+    out[3] = m[3][0] * x + m[3][1] * y + m[3][2] * z + m[3][3] * w;
+
+    return out;
+}

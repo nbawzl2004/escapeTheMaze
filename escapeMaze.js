@@ -3,14 +3,17 @@ var gl;
 var program;
 var vPosition;
 var vNormal;
+var isDebugMode = false;
+var isTopMode = true;
 
 
 // CubeObject
 var myCube = {
-    ambient : vec4(1.0, 1.0, 1.0, 1.0),
+    ambient : vec4(0.0, 1.0, 1.0, 1.0),
     diffuse : vec4(1.0, 1.0, 1.0, 1.0),
     specular : vec4(1.0, 1.0, 1.0, 1.0),
     shininess : 30.0,
+    isPhong : true,
     center : 1,
     vertices :
     [
@@ -39,6 +42,7 @@ myCube.init = function() {
             //call helper function to generate cube
             drawCube();
 
+
             //create buffers for sphere
             myCube.vBuffer = gl.createBuffer();
             myCube.nBuffer = gl.createBuffer();
@@ -65,6 +69,12 @@ myCube.init = function() {
                 gl.enableVertexAttribArray( vNormal);
                 //unlink buffer
                 gl.bindBuffer(gl.ARRAY_BUFFER,null);
+
+
+
+                myCube.ambientProduct = mult(myCube.ambient, light.ambient);
+                myCube.diffuseProduct = mult(myCube.diffuse, light.diffuse);
+                myCube.specularProduct = mult(myCube.specular, light.specular);
         };
 
 myCube.draw = function() {
@@ -79,8 +89,8 @@ myCube.draw = function() {
                 gl.uniform4fv( loc.diffuseProductLoc,flatten(myCube.diffuseProduct) );
                 gl.uniform4fv( loc.specularProductLoc,flatten(myCube.specularProduct) );
                 gl.uniform4fv( loc.lightPositionLoc, flatten(light.position) );
-                gl.uniform1f( loc.shininessLoc, mySphere.shininess );
-                gl.uniform1i( loc.isPhongLoc, mySphere.isPhong );
+                gl.uniform1f( loc.shininessLoc, myCube.shininess );
+                gl.uniform1i( loc.isPhongLoc, myCube.isPhong );
 
 
                 //intergrate modelview matrix
@@ -332,8 +342,11 @@ var camera = {
     aspect : 0 ,  // will be overwritten in init
     near : 0.3,
     far : 300.0,
-    viewMatrix : mult(rotate(90, [1,0,0]), translate(0, -10, 0)),
-    projectionMatrix : mat4()
+    viewMatrix : mat4(),
+    projectionMatrix : mat4(),
+    gameSphereViewMatrix : mat4(),
+    gameTopViewMatrix : mat4(),
+    debugViewMatrix : mat4()
 };
 
 
@@ -441,31 +454,31 @@ function generateSpheres(){
 
 function quad(a, b, c, d) {
 
-    //no texture for now 
+    //no texture for now
 
-     myCube.pointsArray.push(myCube.vertices[a]); 
-     // myCube.colorsArray.push(myCube.color); 
+     myCube.pointsArray.push(myCube.vertices[a]);
+     // myCube.colorsArray.push(myCube.color);
      // texCoordsArray.push(texCoord[0]);
 
-     myCube.pointsArray.push(myCube.vertices[b]); 
+     myCube.pointsArray.push(myCube.vertices[b]);
      // myCube.colorsArray.push(myCube.color);
-     // texCoordsArray.push(texCoord[1]); 
+     // texCoordsArray.push(texCoord[1]);
 
-     myCube.pointsArray.push(myCube.vertices[c]); 
+     myCube.pointsArray.push(myCube.vertices[c]);
      // myCube.colorsArray.push(myCube.color);
-     // texCoordsArray.push(texCoord[2]); 
-   
-     myCube.pointsArray.push(myCube.vertices[a]); 
-     // myCube.colorsArray.push(myCube.color);
-     // texCoordsArray.push(texCoord[0]); 
+     // texCoordsArray.push(texCoord[2]);
 
-     myCube.pointsArray.push(myCube.vertices[c]); 
+     myCube.pointsArray.push(myCube.vertices[a]);
      // myCube.colorsArray.push(myCube.color);
-     // texCoordsArray.push(texCoord[2]); 
+     // texCoordsArray.push(texCoord[0]);
 
-     myCube.pointsArray.push(myCube.vertices[d]); 
+     myCube.pointsArray.push(myCube.vertices[c]);
      // myCube.colorsArray.push(myCube.color);
-     // texCoordsArray.push(texCoord[3]);   
+     // texCoordsArray.push(texCoord[2]);
+
+     myCube.pointsArray.push(myCube.vertices[d]);
+     // myCube.colorsArray.push(myCube.color);
+     // texCoordsArray.push(texCoord[3]);
 }
 
 function storeNormal(face) {
@@ -584,6 +597,7 @@ function render(){
     basePlane.draw();
     myCube.draw();
 
+
     setTimeout(
         function (){requestAnimFrame(render);}, 1000/60
     );
@@ -594,64 +608,124 @@ function render(){
 
 window.onkeydown = function(event){
         // subject to chage
-        if(true ){
-            switch(event.keyCode){
-
-            case 38:   //up arrow
-            break;
-
-            case 40:   //down arrow
-            break;
-
-            case 73:        //key i
-            break;
-
-            case 77:        //key m
-            break;
-
-            case 74:  //key j
-            break;
-
-            case 75:  //key k
-            break;
-
-            case 82:    //key r
-
-            break;
 
 
-            case 78: //key n
-            break;
 
-            case 87: //key w
-            break;
 
-            case 65:
-            break;
 
-            case 37:  // left arrow
-            break;
-            case 39:  // right arrow
-            break;
-         }
-        }
-        else{
-            switch(event.keyCode){
-            case 65:      //key a
-            break;
-             case 37:  // left arrow
-            break;
-            case 39:  // right arrow
-            break;
 
+
+        //game mode
+        if(!isDebugMode){
+            if(true ){
+                switch(event.keyCode){
+
+                case 38:   //up arrow
+                break;
+
+                case 40:   //down arrow
+                break;
+
+                case 73:        //key i
+                break;
+
+                case 77:        //key m
+                break;
+
+                case 74:  //key j
+                break;
+
+                case 75:  //key k
+                break;
+
+                case 82:    //key r
+
+                break;
+
+
+                case 78: //key n
+                break;
+
+                case 87: //key w
+                break;
+
+                case 65:
+                break;
+
+                case 37:  // left arrow
+                break;
+                case 39:  // right arrow
+                break;
+
+                //get into debug mode
+                case 66:
+                isDebugMode = true;
+                break;
+             }
             }
+            else{
+                switch(event.keyCode){
+                case 65:      //key a
+                break;
+                 case 37:  // left arrow
+                break;
+                case 39:  // right arrow
+                break;
+
+                }
+            }
+    }
+            else{
+             switch(event.keyCode){
+                    case 66 : //exit debug mode
+                    isDebugMode = false;
+                    break;
+
+                    case 87 : //key w
+                    camera.debugViewMatrix = mult(translate(0,0,0.1), camera.debugViewMatrix);
+                    break;
+                    case 83 : //key s
+                    camera.debugViewMatrix = mult(translate(0,0,-0.1), camera.debugViewMatrix);
+                    break;
+                    case 65 : //key a
+                    camera.debugViewMatrix = mult(translate(0.1,0,0), camera.debugViewMatrix);
+                    break;
+                    case 68 : //key d
+                    camera.debugViewMatrix = mult(translate(-0.1,0,0), camera.debugViewMatrix);
+                    break;
+
+                    case 38:   //up arrow
+                    camera.debugViewMatrix = mult(rotate(-2,[1,0,0]), camera.debugViewMatrix);
+                    break;
+                    case 40:   //down arrow
+                    camera.debugViewMatrix = mult(rotate(2,[1,0,0]), camera.debugViewMatrix);
+                    break;
+                    case 37:  // left arrow
+                    camera.debugViewMatrix = mult(rotate(-2,[0,1,0]), camera.debugViewMatrix);
+                    break;
+                    case 39:  // right arrow
+                    camera.debugViewMatrix = mult(rotate(2,[0,1,0]), camera.debugViewMatrix);
+                    break;
         }
+    }
+
+    //set current camera view base on modes
+    if(isDebugMode)
+        camera.viewMatrix = camera.debugViewMatrix;
+    else if (isTopMode)
+        camera.viewMatrix = camera.gameTopViewMatrix;
+    else
+        camera.viewMatrix = camera.gameSphereViewMatrix;
+
 
 }
 
 
 
 function testFun(){
+    mySphere.modelMatrix = mult(scale(0.3,0.3,0.3),mat4());
     mySphere.modelMatrix = mult(translate(0,0,-3), mySphere.modelMatrix);
     basePlane.modelMatrix = mult(translate(0,-3,0), basePlane.modelMatrix);
+    camera.gameTopViewMatrix = mult(rotate(90, [1,0,0]), translate(0, -10, 0));
+    camera.viewMatrix = camera.gameTopViewMatrix;
 }
