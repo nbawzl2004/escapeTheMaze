@@ -8,6 +8,18 @@ Beiqi Guan
 804160726
 
 
+keyEvents:
+get into debug Mode
+key :  b
 
+move
+w  : forward,
+s   : back,
+a   : left,
+d   : right,
 
-
+rotate direction
+up : up,
+down : down,
+left : left,
+right : right
