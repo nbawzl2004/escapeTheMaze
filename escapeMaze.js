@@ -6,6 +6,34 @@ var vNormal;
 var isDebugMode = false;
 var isTopMode = true;
 
+//cube Position should be a vec4 and relative to the center
+var cubePosition = [];
+
+//maze is a 2d array
+var maze = [['#','#','#','#','#','#','#','#','#','#'],
+['#',' ',' ',' ',' ',' ',' ','#',' ','#'],
+['#',' ','#',' ','#','#',' ','#',' ','#'],
+[' ',' ','#',' ','#','#',' ','#',' ','#'],
+['#','#','#',' ','#','#',' ',' ',' ','#'],
+['#','#','#',' ','#','#','#','#',' ','#'],
+['#',' ',' ',' ','#',' ','#','#',' ','#'],
+['#',' ','#','#','#',' ','#','#',' ','#'],
+['#',' ',' ',' ',' ',' ','#','#',' ',' '],
+['#','#','#','#','#','#','#','#','#','#']];
+
+//maze translation function
+var translateMaze = function (maze) {
+    //translate a 10*10 maze
+
+    for (var i = 0; i < 10; i++)
+        for (var j = 0; j < 10; j++)
+        {
+            if (maze[i][j] == '#')
+            {
+                cubePosition.push([i-4.5, 0, j-4.5 ]);
+            }
+        }
+}
 
 // CubeObject
 var myCube = {
@@ -34,6 +62,7 @@ var myCube = {
     specularProduct : vec4(),
     modelMatrix : mat4(),
     modelViewMatrix : mat4(),
+    tempModelMatrix: mat4()
 
 }
 
@@ -43,11 +72,11 @@ myCube.init = function() {
             drawCube();
 
 
-            //create buffers for sphere
+            //create buffers for cube
             myCube.vBuffer = gl.createBuffer();
             myCube.nBuffer = gl.createBuffer();
 
-            //-----------------------------------------push sphere vertices in buffer--------------------------------------
+            //-----------------------------------------push cube vertices in buffer--------------------------------------
 
                 gl.bindBuffer(gl.ARRAY_BUFFER,myCube.vBuffer);
                 gl.bufferData(gl.ARRAY_BUFFER,flatten(myCube.pointsArray),gl.STATIC_DRAW);
@@ -77,8 +106,9 @@ myCube.init = function() {
                 myCube.specularProduct = mult(myCube.specular, light.specular);
         };
 
-myCube.draw = function() {
-                // bind ball's buffer
+myCube.draw = function(position) {
+
+                // bind cube's buffer
                 gl.bindBuffer( gl.ARRAY_BUFFER, myCube.vBuffer );
                 gl.vertexAttribPointer( vPosition, 4, gl.FLOAT, false, 0, 0);
                 gl.bindBuffer( gl.ARRAY_BUFFER, myCube.nBuffer );
@@ -94,12 +124,15 @@ myCube.draw = function() {
 
 
                 //intergrate modelview matrix
-                myCube.modelViewMatrix = mult(camera.viewMatrix, myCube.modelMatrix);
+                //calculate cube's modelMatrix based on position
+
+                myCube.tempModelMatrix = mult(translate(position[0], position[1], position[2]), myCube.modelMatrix);
+                myCube.modelViewMatrix = mult(camera.viewMatrix, myCube.tempModelMatrix);
                 myCube.normalMatrix =  transpose(invert4(myCube.modelViewMatrix));
                 light.modelViewMatrix = mult(camera.viewMatrix, light.modelMatrix);
 
                 // transfer data
-                //sphere
+                //cube
                 gl.uniformMatrix4fv(loc.modelViewMatrixLoc, false, flatten(myCube.modelViewMatrix) );
                 gl.uniformMatrix4fv(loc.normalMatrixLoc, false, flatten(myCube.normalMatrix) );
 
@@ -568,6 +601,7 @@ window.onload = function init() {
     // vColor = gl.getAttribLocation(program, "vColor");
 
     //init all objects
+    translateMaze(maze);
     myCube.init();
     mySphere.init();
     basePlane.init();
@@ -595,7 +629,11 @@ function render(){
 
     mySphere.draw();
     basePlane.draw();
-    myCube.draw();
+    // myCube.draw();
+    for (var i = 0; i < cubePosition.length; i++)
+    {
+        myCube.draw(cubePosition[i]);
+    }
 
 
     setTimeout(
