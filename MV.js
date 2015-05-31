@@ -736,3 +736,13 @@ function multv(m, a){
 
     return out;
 }
+
+function v4ToV3(v){
+    if ( !Array.isArray(v) || v.length != 4) {
+        throw "v4ToV3(): first parameter [v] must be an a vec4";
+    }
+
+    return vec3(v[0],v[1],v[2]);
+
+}
+

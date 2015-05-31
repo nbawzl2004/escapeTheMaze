@@ -4,22 +4,24 @@ var program;
 var vPosition;
 var vNormal;
 var isDebugMode = false;
-var isTopMode = true;
+var isTopMode = false;
 
 //cube Position should be a vec4 and relative to the center
 var cubePosition = [];
 
 //maze is a 2d array
-var maze = [['#','#','#','#','#','#','#','#','#','#'],
-['#',' ',' ',' ',' ',' ',' ','#',' ','#'],
-['#',' ','#',' ','#','#',' ','#',' ','#'],
-[' ',' ','#',' ','#','#',' ','#',' ','#'],
-['#','#','#',' ','#','#',' ',' ',' ','#'],
-['#','#','#',' ','#','#','#','#',' ','#'],
-['#',' ',' ',' ','#',' ','#','#',' ','#'],
-['#',' ','#','#','#',' ','#','#',' ','#'],
-['#',' ',' ',' ',' ',' ','#','#',' ',' '],
-['#','#','#','#','#','#','#','#','#','#']];
+var maze = [
+                    ['#','#','#','#','#','#','#','#','#','#'],
+                    ['#',' ',' ',' ',' ',' ',' ','#',' ','#'],
+                    ['#',' ','#',' ','#','#',' ','#',' ','#'],
+                    [' ',' ','#',' ','#','#',' ','#',' ','#'],
+                    ['#','#','#',' ','#','#',' ',' ',' ','#'],
+                    ['#','#','#',' ','#','#','#','#',' ','#'],
+                    ['#',' ',' ',' ','#',' ','#','#',' ','#'],
+                    ['#',' ','#','#','#',' ','#','#',' ','#'],
+                    ['#',' ',' ',' ',' ',' ','#','#',' ',' '],
+                    ['#','#','#','#','#','#','#','#','#','#']
+                    ];
 
 //maze translation function
 var translateMaze = function (maze) {
@@ -30,7 +32,9 @@ var translateMaze = function (maze) {
         {
             if (maze[i][j] == '#')
             {
-                cubePosition.push([i-4.5, 0, j-4.5 ]);
+                //cubePosition.push([i-4.5, 0, j-4.5 ]);
+                cubePosition.push([i, 0, j]);
+
             }
         }
 }
@@ -68,15 +72,15 @@ var myCube = {
 
 //functions
 myCube.init = function() {
-            //call helper function to generate cube
-            drawCube();
+                //call helper function to generate cube
+                drawCube();
 
 
-            //create buffers for cube
-            myCube.vBuffer = gl.createBuffer();
-            myCube.nBuffer = gl.createBuffer();
+                //create buffers for cube
+                myCube.vBuffer = gl.createBuffer();
+                myCube.nBuffer = gl.createBuffer();
 
-            //-----------------------------------------push cube vertices in buffer--------------------------------------
+                //-----------------------------------------push cube vertices in buffer--------------------------------------
 
                 gl.bindBuffer(gl.ARRAY_BUFFER,myCube.vBuffer);
                 gl.bufferData(gl.ARRAY_BUFFER,flatten(myCube.pointsArray),gl.STATIC_DRAW);
@@ -151,11 +155,11 @@ myCube.draw = function(position) {
 // Sphere Object
 
 var mySphere = {
-    ambient : vec4(1.0, 1.0, 1.0, 1.0),
+    ambient : vec4(0.8, 0.1, 0.1, 1.0),
     diffuse : vec4(1.0, 1.0, 1.0, 1.0),
     specular : vec4(1.0, 1.0, 1.0, 1.0),
     shininess : 30.0,
-    position : vec4(0,0,-3,1),
+    position : vec4(0,0,-5,1),
     vertexNum : 0,
     shadingStyle : 3,  //0:no shading, 1:flat,  2:Gouraud, 3:Phong
     isPhong : true,
@@ -168,7 +172,10 @@ var mySphere = {
     modelViewMatrix : mat4(),
 
     complexity : 5,
-    radius : 2
+    radius : 0.05,
+    velocity : vec4(0,0,1/60,0),
+    fractionConstant : 1/1200,
+    topSpeed : 1/20
 
 
     /* object and functions
@@ -212,6 +219,13 @@ mySphere.init = function() {
                 gl.enableVertexAttribArray( vNormal);
                 //unlink buffer
                 gl.bindBuffer(gl.ARRAY_BUFFER,null);
+
+                mySphere.modelMatrix = mult(scale(mySphere.radius,mySphere.radius,mySphere.radius),mat4());
+
+                camera.position = add(mySphere.position, vec4(0,0,-camera.distanceToSphere,0));
+                camera.eye = v4ToV3(camera.position);
+                camera.at = v4ToV3(mySphere.position);
+                camera.up = vec3(0,1,0);
         }
 
 mySphere.draw = function() {
@@ -220,6 +234,9 @@ mySphere.draw = function() {
                 gl.vertexAttribPointer( vPosition, 4, gl.FLOAT, false, 0, 0);
                 gl.bindBuffer( gl.ARRAY_BUFFER, mySphere.nBuffer );
                 gl.vertexAttribPointer( vNormal, 4, gl.FLOAT, false, 0, 0 );
+
+                //move The ball
+                mySphere.move();
 
                  //transfer values
                 gl.uniform4fv( loc.ambientProductLoc,flatten(mySphere.ambientProduct) );
@@ -252,6 +269,32 @@ mySphere.draw = function() {
                     gl.drawArrays(gl.TRIANGLES, j, 3);
                 }
             }
+
+mySphere.move = function(){
+    mySphere.position = add(mySphere.position,mySphere.velocity);
+    //************detect collision here
+
+    //*******************************no collision
+    var vx = mySphere.velocity[0], vy = mySphere.velocity[1], vz = mySphere.velocity[2];
+    mySphere.modelMatrix = mult(translate(vx,vy,vz), mySphere.modelMatrix);
+
+    camera.position = add(camera.position, mySphere.velocity);
+    camera.eye = v4ToV3(camera.position);
+    camera.at = v4ToV3(mySphere.position);
+    camera.viewMatrix = lookAt(camera.eye,camera.at,camera.up);
+
+    //apply fraction
+    var speed = length(mySphere.velocity);
+    if(speed < mySphere.fractionConstant)
+        mySphere.velocity = vec4(0,0,0,0);
+    else{
+        var oppositeVec = negate(mySphere.velocity);
+        oppositeVec = normalize(oppositeVec);
+        oppositeVec = vscale(mySphere.fractionConstant, oppositeVec);
+        mySphere.velocity = add(mySphere.velocity, oppositeVec);
+    }
+
+}
 
 
 var basePlane = {
@@ -375,11 +418,18 @@ var camera = {
     aspect : 0 ,  // will be overwritten in init
     near : 0.3,
     far : 300.0,
+    position : vec4(0,0,0,1),
     viewMatrix : mat4(),
     projectionMatrix : mat4(),
     gameSphereViewMatrix : mat4(),
     gameTopViewMatrix : mat4(),
-    debugViewMatrix : mat4()
+    debugViewMatrix : mat4(),
+    distanceToSphere : 0.7,
+
+    //only for gameSphereView
+    eye : vec3(),
+    at : vec3(),
+    up : vec3()
 };
 
 
@@ -645,74 +695,89 @@ function render(){
 //===============================  key pressed events  ===============================
 
 window.onkeydown = function(event){
-        // subject to chage
-
-
-
-
-
 
 
         //game mode
         if(!isDebugMode){
             if(true ){
-                switch(event.keyCode){
 
-                case 38:   //up arrow
-                break;
-
-                case 40:   //down arrow
-                break;
-
-                case 73:        //key i
-                break;
-
-                case 77:        //key m
-                break;
-
-                case 74:  //key j
-                break;
-
-                case 75:  //key k
-                break;
-
-                case 82:    //key r
-
-                break;
+                if(length(mySphere.velocity) <= mySphere.topSpeed){
 
 
-                case 78: //key n
-                break;
+                    var currentDirc = subtract(mySphere.position, camera.position);
+                    currentDirc = vscale(1/240,normalize(currentDirc));
 
-                case 87: //key w
-                break;
 
-                case 65:
-                break;
+                    switch(event.keyCode){
 
-                case 37:  // left arrow
-                break;
-                case 39:  // right arrow
-                break;
+                        case 87 : //key w
+                        mySphere.velocity = add(mySphere.velocity, currentDirc);
+                        break;
+                        case 83 : //key s
+                        mySphere.velocity = add(mySphere.velocity, negate(currentDirc));
+                        break;
+                        case 65 : //key a
+                        var currentLeft = negate(cross(currentDirc,vec4(0,1,0,0)));
+                        mySphere.velocity = add(mySphere.velocity, vec4(currentLeft,0));
+                        break;
+                        case 68 : //key d
+                        var currentRight = cross(currentDirc,vec4(0,1,0,0));
+                        mySphere.velocity = add(mySphere.velocity, vec4(currentRight,0));
+                        break;
 
-                //get into debug mode
-                case 66:
-                isDebugMode = true;
-                break;
-             }
+                        case 37:  // left arrow
+                        var v3SpherePosition = v4ToV3(mySphere.position);
+                        var v3CameraPosition = v4ToV3(camera.position);
+                        var sphereToCameraVec = subtract(v3CameraPosition,v3SpherePosition);
+                        var v3Vertical = vec3(0,1,0);
+                        var v3Cross = cross(sphereToCameraVec,v3Vertical);
+                        v3Cross = normalize(v3Cross);
+                        v3Cross = vscale(0.02,v3Cross);
+                        var newSphereToCamera = add(sphereToCameraVec, v3Cross);
+                        newSphereToCamera = normalize(newSphereToCamera);
+
+                        newSphereToCamera = vscale(camera.distanceToSphere,newSphereToCamera);
+                        camera.eye = add(v3SpherePosition, newSphereToCamera);
+                        camera.position = vec4(camera.eye, 1);
+                        break;
+                        case 39:  // right arrow
+                        var v3SpherePosition = v4ToV3(mySphere.position);
+                        var v3CameraPosition = v4ToV3(camera.position);
+                        var sphereToCameraVec = subtract(v3CameraPosition,v3SpherePosition);
+                        var v3Vertical = vec3(0,1,0);
+                        var v3Cross = cross(sphereToCameraVec,v3Vertical);
+                        v3Cross = normalize(v3Cross);
+                        v3Cross = negate(vscale(0.02,v3Cross));
+                        var newSphereToCamera = add(sphereToCameraVec, v3Cross);
+                        newSphereToCamera = normalize(newSphereToCamera);
+
+                        newSphereToCamera = vscale(camera.distanceToSphere,newSphereToCamera);
+                        camera.eye = add(v3SpherePosition, newSphereToCamera);
+                        camera.position = vec4(camera.eye, 1);
+                        break;
+
+                        //get into debug mode
+                        case 66:
+                        isDebugMode = true;
+                        break;
+                     }
+
+                    camera.gameSphereViewMatrix = lookAt(camera.eye, camera.at, camera.up);
+                }
+
             }
             else{
-                switch(event.keyCode){
-                case 65:      //key a
-                break;
-                 case 37:  // left arrow
-                break;
-                case 39:  // right arrow
-                break;
+                    switch(event.keyCode){
+                    case 65:      //key a
+                    break;
+                     case 37:  // left arrow
+                    break;
+                    case 39:  // right arrow
+                    break;
 
+                    }
                 }
             }
-    }
             else{
              switch(event.keyCode){
                     case 66 : //exit debug mode
@@ -744,26 +809,37 @@ window.onkeydown = function(event){
                     case 39:  // right arrow
                     camera.debugViewMatrix = mult(rotate(2,[0,1,0]), camera.debugViewMatrix);
                     break;
-        }
-    }
+                }
+            }
 
-    //set current camera view base on modes
-    if(isDebugMode)
-        camera.viewMatrix = camera.debugViewMatrix;
-    else if (isTopMode)
-        camera.viewMatrix = camera.gameTopViewMatrix;
-    else
-        camera.viewMatrix = camera.gameSphereViewMatrix;
-
-
+            //set current camera view base on modes
+            if(isDebugMode)
+                camera.viewMatrix = camera.debugViewMatrix;
+            else if (isTopMode)
+                camera.viewMatrix = camera.gameTopViewMatrix;
+            else
+                camera.viewMatrix = camera.gameSphereViewMatrix;
 }
 
 
 
+
+
+
+
+
+
+
+
 function testFun(){
-    mySphere.modelMatrix = mult(scale(0.3,0.3,0.3),mat4());
-    mySphere.modelMatrix = mult(translate(0,0,-3), mySphere.modelMatrix);
-    basePlane.modelMatrix = mult(translate(0,-3,0), basePlane.modelMatrix);
-    camera.gameTopViewMatrix = mult(rotate(90, [1,0,0]), translate(0, -10, 0));
+
+    mySphere.modelMatrix = mult(translate(0,0,-5), mySphere.modelMatrix);
+    mySphere.position = vec4(0,0,-5,1);
+
+    basePlane.modelMatrix = mult(translate(0,-0.3,0), basePlane.modelMatrix);
+    //camera.gameTopViewMatrix = mult(rotate(90, [1,0,0]), translate(0, -20, 0));
+
+    camera.gameTopViewMatrix = lookAt([0,0,-1],[0,0,-5],[0,1,0]);
+
     camera.viewMatrix = camera.gameTopViewMatrix;
 }
