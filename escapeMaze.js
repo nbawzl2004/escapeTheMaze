@@ -33,7 +33,7 @@ var translateMaze = function (maze) {
             if (maze[i][j] == '#')
             {
                 //cubePosition.push([i-4.5, 0, j-4.5 ]);
-                cubePosition.push([i, 0, j]);
+                cubePosition.push(vec4(i, 0, j,1));
 
             }
         }
@@ -47,6 +47,7 @@ var myCube = {
     shininess : 30.0,
     isPhong : true,
     center : 1,
+    side : 1,
     vertices :
     [
     vec4( -0.5, -0.5,  0.5, 1.0 ), //left bot front 0
@@ -159,7 +160,7 @@ var mySphere = {
     diffuse : vec4(1.0, 1.0, 1.0, 1.0),
     specular : vec4(1.0, 1.0, 1.0, 1.0),
     shininess : 30.0,
-    position : vec4(0,0,-5,1),
+    position : vec4(0,-0.45,-5,1),
     vertexNum : 0,
     shadingStyle : 3,  //0:no shading, 1:flat,  2:Gouraud, 3:Phong
     isPhong : true,
@@ -174,7 +175,7 @@ var mySphere = {
     complexity : 5,
     radius : 0.05,
     velocity : vec4(0,0,1/60,0),
-    fractionConstant : 1/1200,
+    fractionConstant : 1/1500,
     topSpeed : 1/20
 
 
@@ -271,17 +272,17 @@ mySphere.draw = function() {
             }
 
 mySphere.move = function(){
-    mySphere.position = add(mySphere.position,mySphere.velocity);
-    //************detect collision here
 
-    //*******************************no collision
+    mySphere.collisionDetection();
+    mySphere.position = add(mySphere.position,mySphere.velocity);
+
     var vx = mySphere.velocity[0], vy = mySphere.velocity[1], vz = mySphere.velocity[2];
     mySphere.modelMatrix = mult(translate(vx,vy,vz), mySphere.modelMatrix);
 
     camera.position = add(camera.position, mySphere.velocity);
     camera.eye = v4ToV3(camera.position);
     camera.at = v4ToV3(mySphere.position);
-    camera.viewMatrix = lookAt(camera.eye,camera.at,camera.up);
+    camera.gameSphereViewMatrix = lookAt(camera.eye,camera.at,camera.up);
 
     //apply fraction
     var speed = length(mySphere.velocity);
@@ -294,12 +295,80 @@ mySphere.move = function(){
         mySphere.velocity = add(mySphere.velocity, oppositeVec);
     }
 
+    if(isDebugMode)
+        camera.viewMatrix = camera.debugViewMatrix;
+    else if(isTopMode)
+        camera.viewMatrix = camera.gameTopViewMatrix;
+    else{
+        var adjustedSphereViewMatrix = mult(translate(0,-0.1,0),camera.gameSphereViewMatrix);
+        camera.viewMatrix = adjustedSphereViewMatrix;
+    }
+
+}
+
+mySphere.collisionDetection = function(){
+    // test1 : Whether cube and ball close enough
+    var cubeHalfDiagonal = (myCube.side / 2) * Math.sqrt(2);
+    var a = cubeHalfDiagonal, b = mySphere.radius;
+    var alfa = b/Math.sqrt(2);
+    var c = Math.sqrt(a*a + alfa*alfa) + alfa; // c is LargestDistanceToCollde
+    var halfSide = myCube.side / 2;
+
+
+    for (var k=0;k<cubePosition.length;k++) {
+        var cPosition = cubePosition[k].slice();
+        cPosition[1] = -0.45;
+
+
+        if(distance(cPosition, mySphere.position) <= c){
+
+            var frontPoint = add(cPosition , vec4(0,0,halfSide,0));
+            var backPoint = add(cPosition , vec4(0,0,-halfSide,0));
+            var leftPoint = add(cPosition , vec4(-halfSide,0,0,0));
+            var rightPoint = add(cPosition , vec4(halfSide,0,0,0));
+
+            var sToFront = distance(mySphere.position, frontPoint);
+            var sToBack = distance(mySphere.position, backPoint);
+            var sToLeft = distance(mySphere.position, leftPoint);
+            var sToRight = distance(mySphere.position, rightPoint);
+
+            if(sToFront <= sToBack && sToFront <= sToLeft && sToFront <= sToRight ){
+                if((mySphere.position[2] - frontPoint[2] ) <= mySphere.radius){
+                    //find Collision!
+                    mySphere.velocity[2] = -mySphere.velocity[2];
+                }
+            }
+
+            if(sToBack <= sToFront && sToBack <= sToLeft && sToBack <= sToRight ){
+                if((backPoint[2] - mySphere.position[2] ) <= mySphere.radius){
+                    //find Collision!
+                    mySphere.velocity[2] = -mySphere.velocity[2];
+                }
+            }
+
+            if(sToLeft <= sToBack && sToLeft <= sToFront && sToLeft <= sToRight ){
+                if((leftPoint[0] - mySphere.position[0] ) <= mySphere.radius){
+                    //find Collision!
+                    mySphere.velocity[0] = -mySphere.velocity[0];
+                }
+            }
+
+            if(sToRight < sToBack && sToRight < sToFront && sToRight < sToLeft ){
+                if((mySphere.position[0] - rightPoint[0] ) <= mySphere.radius){
+                    //find Collision!
+                    mySphere.velocity[0] = -mySphere.velocity[0];
+                }
+            }
+
+        }
+    }
+
 }
 
 
 var basePlane = {
 
-    limit : 30,
+    limit : 3000,
     pointsArray : [],
     normalsArray : [],
     ambient : vec4(1.0, 1.0, 0.0, 1.0),
@@ -705,7 +774,7 @@ window.onkeydown = function(event){
 
 
                     var currentDirc = subtract(mySphere.position, camera.position);
-                    currentDirc = vscale(1/240,normalize(currentDirc));
+                    currentDirc = vscale(1/120,normalize(currentDirc));
 
 
                     switch(event.keyCode){
@@ -732,7 +801,7 @@ window.onkeydown = function(event){
                         var v3Vertical = vec3(0,1,0);
                         var v3Cross = cross(sphereToCameraVec,v3Vertical);
                         v3Cross = normalize(v3Cross);
-                        v3Cross = vscale(0.02,v3Cross);
+                        v3Cross = vscale(0.05,v3Cross);
                         var newSphereToCamera = add(sphereToCameraVec, v3Cross);
                         newSphereToCamera = normalize(newSphereToCamera);
 
@@ -747,7 +816,7 @@ window.onkeydown = function(event){
                         var v3Vertical = vec3(0,1,0);
                         var v3Cross = cross(sphereToCameraVec,v3Vertical);
                         v3Cross = normalize(v3Cross);
-                        v3Cross = negate(vscale(0.02,v3Cross));
+                        v3Cross = negate(vscale(0.05,v3Cross));
                         var newSphereToCamera = add(sphereToCameraVec, v3Cross);
                         newSphereToCamera = normalize(newSphereToCamera);
 
@@ -785,16 +854,16 @@ window.onkeydown = function(event){
                     break;
 
                     case 87 : //key w
-                    camera.debugViewMatrix = mult(translate(0,0,0.1), camera.debugViewMatrix);
+                    camera.debugViewMatrix = mult(translate(0,0,0.5), camera.debugViewMatrix);
                     break;
                     case 83 : //key s
-                    camera.debugViewMatrix = mult(translate(0,0,-0.1), camera.debugViewMatrix);
+                    camera.debugViewMatrix = mult(translate(0,0,-0.5), camera.debugViewMatrix);
                     break;
                     case 65 : //key a
-                    camera.debugViewMatrix = mult(translate(0.1,0,0), camera.debugViewMatrix);
+                    camera.debugViewMatrix = mult(translate(0.5,0,0), camera.debugViewMatrix);
                     break;
                     case 68 : //key d
-                    camera.debugViewMatrix = mult(translate(-0.1,0,0), camera.debugViewMatrix);
+                    camera.debugViewMatrix = mult(translate(-0.5,0,0), camera.debugViewMatrix);
                     break;
 
                     case 38:   //up arrow
@@ -818,7 +887,10 @@ window.onkeydown = function(event){
             else if (isTopMode)
                 camera.viewMatrix = camera.gameTopViewMatrix;
             else
-                camera.viewMatrix = camera.gameSphereViewMatrix;
+                {
+                    var adjustedSphereViewMatrix = mult(translate(0,-0.1,0),camera.gameSphereViewMatrix);
+                    camera.viewMatrix = adjustedSphereViewMatrix;
+                }
 }
 
 
@@ -833,10 +905,10 @@ window.onkeydown = function(event){
 
 function testFun(){
 
-    mySphere.modelMatrix = mult(translate(0,0,-5), mySphere.modelMatrix);
-    mySphere.position = vec4(0,0,-5,1);
+    mySphere.modelMatrix = mult(translate(0,-0.45,-5), mySphere.modelMatrix);
+    mySphere.position = vec4(0,-0.45,-5,1);
 
-    basePlane.modelMatrix = mult(translate(0,-0.3,0), basePlane.modelMatrix);
+    basePlane.modelMatrix = mult(translate(0,-0.5,0), basePlane.modelMatrix);
     //camera.gameTopViewMatrix = mult(rotate(90, [1,0,0]), translate(0, -20, 0));
 
     camera.gameTopViewMatrix = lookAt([0,0,-1],[0,0,-5],[0,1,0]);

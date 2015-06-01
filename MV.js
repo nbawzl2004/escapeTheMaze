@@ -746,3 +746,7 @@ function v4ToV3(v){
 
 }
 
+
+function distance(u,v){
+    return length(subtract(u,v));
+}
