@@ -3,8 +3,10 @@ var gl;
 var program;
 var vPosition;
 var vNormal;
+var vTexCoord;
 var isDebugMode = false;
 var isTopMode = false;
+var image;
 
 //cube Position should be a vec4 and relative to the center
 var cubePosition = [];
@@ -59,8 +61,15 @@ var myCube = {
     vec4( 0.5, -0.5, -0.5, 1.0 ) //right bot back 7
     ],
     vertexNum: 36,
+    texCoord: [
+        vec2(0, 0),
+        vec2(0, 1),
+        vec2(1, 1),
+        vec2(1, 0)
+    ],
     pointsArray : [],
     normalsArray : [],
+    texCoordsArray: [],
     ambientProduct : vec4(),
     diffuseProduct : vec4(),
     specularProduct : vec4(),
@@ -75,10 +84,16 @@ myCube.init = function() {
                 //call helper function to generate cube
                 drawCube();
 
+                //define vTexCoord
+                vTexCoord = gl.getAttribLocation( program, "vTexCoord" );
 
                 //create buffers for cube
                 myCube.vBuffer = gl.createBuffer();
                 myCube.nBuffer = gl.createBuffer();
+
+                //texture buffer
+                myCube.tBuffer = gl.createBuffer();
+
 
                 //-----------------------------------------push cube vertices in buffer--------------------------------------
 
@@ -103,20 +118,54 @@ myCube.init = function() {
                 //unlink buffer
                 gl.bindBuffer(gl.ARRAY_BUFFER,null);
 
+                ////-----------------------------------------push texture Coords in buffer--------------------------------------
+                gl.bindBuffer( gl.ARRAY_BUFFER, myCube.tBuffer );
+                gl.bufferData( gl.ARRAY_BUFFER, flatten(myCube.texCoordsArray), gl.STATIC_DRAW );  
+
+
+                gl.vertexAttribPointer( vTexCoord, 2, gl.FLOAT, false, 0, 0 );
+                gl.enableVertexAttribArray( vTexCoord);
+                //unlink buffer
+                gl.bindBuffer(gl.ARRAY_BUFFER,null);
+
 
 
                 myCube.ambientProduct = mult(myCube.ambient, light.ambient);
                 myCube.diffuseProduct = mult(myCube.diffuse, light.diffuse);
                 myCube.specularProduct = mult(myCube.specular, light.specular);
+
+                //setup texture
+                image = document.getElementById("texImage");
+
+                myCube.texture = gl.createTexture();
+                gl.bindTexture( gl.TEXTURE_2D, myCube.texture );
+                gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+                gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGB, 
+                gl.RGB, gl.UNSIGNED_BYTE, image );
+                gl.generateMipmap( gl.TEXTURE_2D );
+                gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, 
+                                  gl.LINEAR_MIPMAP_LINEAR );
+                gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST );
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT); //Prevents s-coordinate wrapping (repeating).
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT); //Prevents t-coordinate wrapping (repeating).
         };
 
 myCube.draw = function(position) {
+
+                //make sure vTexCoord is enabled
+                gl.enableVertexAttribArray( vTexCoord);
+
 
                 // bind cube's buffer
                 gl.bindBuffer( gl.ARRAY_BUFFER, myCube.vBuffer );
                 gl.vertexAttribPointer( vPosition, 4, gl.FLOAT, false, 0, 0);
                 gl.bindBuffer( gl.ARRAY_BUFFER, myCube.nBuffer );
                 gl.vertexAttribPointer( vNormal, 4, gl.FLOAT, false, 0, 0 );
+
+                //texture buffer
+                gl.bindBuffer( gl.ARRAY_BUFFER, myCube.tBuffer);
+                gl.vertexAttribPointer( vTexCoord, 2, gl.FLOAT, false, 0, 0 );
+
 
                  //transfer values
                 gl.uniform4fv( loc.ambientProductLoc,flatten(myCube.ambientProduct) );
@@ -125,6 +174,10 @@ myCube.draw = function(position) {
                 gl.uniform4fv( loc.lightPositionLoc, flatten(light.position) );
                 gl.uniform1f( loc.shininessLoc, myCube.shininess );
                 gl.uniform1i( loc.isPhongLoc, myCube.isPhong );
+
+
+                //transfer texture value
+                gl.uniform1i(gl.getUniformLocation(program, "texture"), 0);
 
 
                 //intergrate modelview matrix
@@ -234,6 +287,10 @@ mySphere.init = function() {
         }
 
 mySphere.draw = function() {
+
+                //make sure vTexCoord is turned off
+                gl.disableVertexAttribArray( vTexCoord);
+
                 // bind ball's buffer
                 gl.bindBuffer( gl.ARRAY_BUFFER, mySphere.vBuffer );
                 gl.vertexAttribPointer( vPosition, 4, gl.FLOAT, false, 0, 0);
@@ -276,6 +333,7 @@ mySphere.draw = function() {
 
                 //draw sphere
                     for(var j=0; j < mySphere.vertexNum; j+=3){
+                    //for(var j=0; j < 3; j+=3){
                         //change color of vertices
                         tempAmbientProduct[0] -= 1/mySphere.vertexNum;
                         gl.uniform4fv( loc.ambientProductLoc,flatten(tempAmbientProduct) );
@@ -477,6 +535,10 @@ basePlane.init = function(){
 }
 
 basePlane.draw = function() {
+
+    //make sure vTexCoord is turned off
+    gl.disableVertexAttribArray( vTexCoord);
+
     gl.bindBuffer( gl.ARRAY_BUFFER, basePlane.vBuffer );
     gl.vertexAttribPointer( vPosition, 4, gl.FLOAT, false, 0, 0);
     gl.bindBuffer( gl.ARRAY_BUFFER, basePlane.nBuffer );
@@ -666,27 +728,27 @@ function quad(a, b, c, d) {
 
      myCube.pointsArray.push(myCube.vertices[a]);
      // myCube.colorsArray.push(myCube.color);
-     // texCoordsArray.push(texCoord[0]);
+     myCube.texCoordsArray.push(myCube.texCoord[0]);
 
      myCube.pointsArray.push(myCube.vertices[b]);
      // myCube.colorsArray.push(myCube.color);
-     // texCoordsArray.push(texCoord[1]);
+     myCube.texCoordsArray.push(myCube.texCoord[1]);
 
      myCube.pointsArray.push(myCube.vertices[c]);
      // myCube.colorsArray.push(myCube.color);
-     // texCoordsArray.push(texCoord[2]);
+     myCube.texCoordsArray.push(myCube.texCoord[2]);
 
      myCube.pointsArray.push(myCube.vertices[a]);
      // myCube.colorsArray.push(myCube.color);
-     // texCoordsArray.push(texCoord[0]);
+     myCube.texCoordsArray.push(myCube.texCoord[0]);
 
      myCube.pointsArray.push(myCube.vertices[c]);
      // myCube.colorsArray.push(myCube.color);
-     // texCoordsArray.push(texCoord[2]);
+     myCube.texCoordsArray.push(myCube.texCoord[2]);
 
      myCube.pointsArray.push(myCube.vertices[d]);
      // myCube.colorsArray.push(myCube.color);
-     // texCoordsArray.push(texCoord[3]);
+     myCube.texCoordsArray.push(myCube.texCoord[3]);
 }
 
 function storeNormal(face) {
@@ -772,7 +834,6 @@ window.onload = function init() {
 
     vPosition = gl.getAttribLocation( program, "vPosition" );
     vNormal = gl.getAttribLocation( program, "vNormal" );
-    // vColor = gl.getAttribLocation(program, "vColor");
 
     //init all objects
     translateMaze(maze);
@@ -799,7 +860,7 @@ function render(){
 
     mySphere.draw();
     basePlane.draw();
-    // myCube.draw();
+
     for (var i = 0; i < cubePosition.length; i++)
     {
         myCube.draw(cubePosition[i]);

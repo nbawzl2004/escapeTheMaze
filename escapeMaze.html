@@ -8,6 +8,11 @@
 precision mediump float;
 attribute vec4 vPosition;
 attribute vec4 vNormal;
+attribute vec2 vTexCoord;
+
+varying vec4 fColor;
+varying vec2 fTexCoord;
+
 varying vec3 N, L, E, H;
 uniform mat4 sphereModelMatrix;
 uniform mat4 modelViewMatrix;
@@ -22,7 +27,6 @@ uniform vec4 ambientProduct;
 uniform vec4 diffuseProduct;
 uniform vec4 specularProduct;
 uniform float shininess;
-varying vec4 fColor;
 varying float distance;
 
 void main()
@@ -71,6 +75,8 @@ void main()
         fColor.a = 1.0;
     }
 
+    fTexCoord = vTexCoord;
+
     gl_Position = projectionMatrix * modelViewMatrix * vPosition;
 
 
@@ -78,15 +84,18 @@ void main()
 </script>
 
 <script id="fragment-shader" type="x-shader/x-fragment">
-
 precision mediump float;
+uniform sampler2D texture;
+
+varying vec4 fColor;
+varying vec2 fTexCoord;
+
 uniform vec4 ambientProduct;
 uniform vec4 diffuseProduct;
 uniform vec4 specularProduct;
 uniform float shininess;
 uniform bool isPhong;
 varying vec3 N, L, E, H;
-varying vec4 fColor;
 varying float distance;
 
 void
@@ -125,9 +134,11 @@ main()
     gl_FragColor = fColorTemp;
     }
 
-
-else
-    gl_FragColor = fColor;
+    else
+    {
+    gl_FragColor = 0.5 * texture2D(texture, fTexCoord);
+    gl_FragColor.w = 1.0;
+    }
 }
 </script>
 
@@ -140,6 +151,9 @@ else
 <canvas id="gl-canvas" width="960" height="540">
 Oops ... your browser doesn't support the HTML5 canvas element
 </canvas>
+
+<img id = "texImage" src="texture.jpg" hidden></img>
+
 
 </body>
 </html>
