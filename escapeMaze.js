@@ -41,11 +41,11 @@ var translateMaze = function (maze) {
 
 // CubeObject
 var myCube = {
-    ambient : vec4(0.0, 1.0, 1.0, 1.0),
+    ambient : vec4(0.0, 0.5, 0.5, 1.0),
     diffuse : vec4(1.0, 1.0, 1.0, 1.0),
     specular : vec4(1.0, 1.0, 1.0, 1.0),
     shininess : 30.0,
-    isPhong : true,
+    isPhong : false,
     center : 1,
     side : 1,
     vertices :
@@ -142,7 +142,7 @@ myCube.draw = function(position) {
                 gl.uniformMatrix4fv(loc.normalMatrixLoc, false, flatten(myCube.normalMatrix) );
 
                 //light
-                gl.uniformMatrix4fv(loc.lightModelViewMatrixLoc, false, flatten(light.modelViewMatrix));
+                gl.uniformMatrix4fv(loc.lightModelViewMatrixLoc, false, flatten(mySphere.modelViewMatrix));
                 gl.uniform4fv(loc.lightPositionLoc, flatten(light.position));
 
                 //projection matrix
@@ -160,7 +160,7 @@ var mySphere = {
     diffuse : vec4(1.0, 1.0, 1.0, 1.0),
     specular : vec4(1.0, 1.0, 1.0, 1.0),
     shininess : 30.0,
-    position : vec4(0,-0.45,-5,1),
+    position : vec4(0,-0.45,-3,1),
     vertexNum : 0,
     shadingStyle : 3,  //0:no shading, 1:flat,  2:Gouraud, 3:Phong
     isPhong : true,
@@ -175,7 +175,7 @@ var mySphere = {
     complexity : 5,
     radius : 0.05,
     velocity : vec4(0,0,1/60,0),
-    fractionConstant : 1/1500,
+    fractionConstant : 1/3000,
     topSpeed : 1/30
 
 
@@ -227,6 +227,7 @@ mySphere.init = function() {
                 camera.eye = v4ToV3(camera.position);
                 camera.at = v4ToV3(mySphere.position);
                 camera.up = vec3(0,1,0);
+                camera.gameTopViewMatrix = lookAt([4,20,4],[4,0,4],[0,0,1]);
         }
 
 mySphere.draw = function() {
@@ -259,7 +260,7 @@ mySphere.draw = function() {
                 gl.uniformMatrix4fv(loc.normalMatrixLoc, false, flatten(mySphere.normalMatrix) );
 
                 //light
-                gl.uniformMatrix4fv(loc.lightModelViewMatrixLoc, false, flatten(light.modelViewMatrix));
+                gl.uniformMatrix4fv(loc.lightModelViewMatrixLoc, false, flatten(mySphere.modelViewMatrix));
                 gl.uniform4fv(loc.lightPositionLoc, flatten(light.position));
 
                 //projection matrix
@@ -385,7 +386,7 @@ var basePlane = {
     limit : 3000,
     pointsArray : [],
     normalsArray : [],
-    ambient : vec4(1.0, 1.0, 0.0, 1.0),
+    ambient : vec4(0.1, 0.1, 0.0, 1.0),
     diffuse : vec4(1.0, 1.0, 1.0, 1.0),
     specular : vec4(1.0, 1.0, 1.0, 1.0),
     shininess : 30.0,
@@ -468,7 +469,7 @@ basePlane.draw = function() {
     gl.uniformMatrix4fv(loc.normalMatrixLoc, false, flatten(basePlane.normalMatrix) );
 
     //*************
-    gl.uniformMatrix4fv(loc.lightModelViewMatrixLoc, false, flatten(light.modelViewMatrix));
+    gl.uniformMatrix4fv(loc.lightModDSelViewMatrixLoc, false, flatten(mySphere.modelViewMatrix));
     gl.uniform4fv(loc.lightPositionLoc, flatten(light.position));
 
     //projection matrix
@@ -487,8 +488,9 @@ basePlane.draw = function() {
 var light = {
     ambient : vec4(1.0, 1.0, 1.0, 1.0 ),
     diffuse :  vec4( 1.0, 1.0, 1.0, 1.0 ),
-    specular : vec4( 1.0, 1.0, 1.0, 1.0 ),
-    position : vec4(0,2,-300,1), //point light
+    specular : vec4(1.0, 1.0, 1.0, 1.0 ),
+    //position : vec4(0,-0.45,-3,1), //point light
+    position : vec4(0,0,1,1),
     modelMatrix : mat4(),
     modelViewMatrix : mat4()
 };
@@ -507,7 +509,7 @@ var camera = {
     gameSphereViewMatrix : mat4(),
     gameTopViewMatrix : mat4(),
     debugViewMatrix : mat4(),
-    distanceToSphere : 0.7,
+    distanceToSphere : 0.5,
 
     //only for gameSphereView
     eye : vec3(),
@@ -782,85 +784,118 @@ window.onkeydown = function(event){
 
         //game mode
         if(!isDebugMode){
-            if(true ){
+                if(!isTopMode ){
 
-                if(length(mySphere.velocity) <= mySphere.topSpeed){
+                        var currentDirc = subtract(mySphere.position, camera.position);
+                        currentDirc = vscale(1/100,normalize(currentDirc));
+                        var tempVelocity;
+                        switch(event.keyCode){
+
+                            case 87 : //key w
+                                tempVelocity = add(mySphere.velocity, currentDirc);
+                                if(length(tempVelocity) <= mySphere.topSpeed)
+                                mySphere.velocity = tempVelocity;
+                            break;
+                            case 83 : //key s
+                                tempVelocity = add(mySphere.velocity, negate(currentDirc));
+                                if(length(tempVelocity) <= mySphere.topSpeed)
+                                mySphere.velocity = tempVelocity;
+                            break;
+                            case 65 : //key a
+                                var currentLeft = negate(cross(currentDirc,vec4(0,1,0,0)));
+                                tempVelocity = add(mySphere.velocity, vec4(currentLeft,0));
+                                if(length(tempVelocity) <= mySphere.topSpeed)
+                                mySphere.velocity = tempVelocity;
+                            break;
+                            case 68 : //key d
+                                var currentRight = cross(currentDirc,vec4(0,1,0,0));
+                                tempVelocity = add(mySphere.velocity, vec4(currentRight,0));
+                                if(length(tempVelocity) <= mySphere.topSpeed)
+                                mySphere.velocity = tempVelocity;
+                            break;
+
+                            case 37:  // left arrow
+                            var v3SpherePosition = v4ToV3(mySphere.position);
+                            var v3CameraPosition = v4ToV3(camera.position);
+                            var sphereToCameraVec = subtract(v3CameraPosition,v3SpherePosition);
+                            var v3Vertical = vec3(0,1,0);
+                            var v3Cross = cross(sphereToCameraVec,v3Vertical);
+                            v3Cross = normalize(v3Cross);
+                            v3Cross = vscale(0.05,v3Cross);
+                            var newSphereToCamera = add(sphereToCameraVec, v3Cross);
+                            newSphereToCamera = normalize(newSphereToCamera);
+
+                            newSphereToCamera = vscale(camera.distanceToSphere,newSphereToCamera);
+                            camera.eye = add(v3SpherePosition, newSphereToCamera);
+                            camera.position = vec4(camera.eye, 1);
+                            break;
+                            case 39:  // right arrow
+                            var v3SpherePosition = v4ToV3(mySphere.position);
+                            var v3CameraPosition = v4ToV3(camera.position);
+                            var sphereToCameraVec = subtract(v3CameraPosition,v3SpherePosition);
+                            var v3Vertical = vec3(0,1,0);
+                            var v3Cross = cross(sphereToCameraVec,v3Vertical);
+                            v3Cross = normalize(v3Cross);
+                            v3Cross = negate(vscale(0.05,v3Cross));
+                            var newSphereToCamera = add(sphereToCameraVec, v3Cross);
+                            newSphereToCamera = normalize(newSphereToCamera);
+
+                            newSphereToCamera = vscale(camera.distanceToSphere,newSphereToCamera);
+                            camera.eye = add(v3SpherePosition, newSphereToCamera);
+                            camera.position = vec4(camera.eye, 1);
+                            break;
+                            case 84: //key t
+                            isTopMode = true;
+                            break;
+
+                            //get into debug mode
+                            case 66:
+                            isDebugMode = true;
+                            break;
+                         }
+
+                        camera.gameSphereViewMatrix = lookAt(camera.eye, camera.at, camera.up);
 
 
-                    var currentDirc = subtract(mySphere.position, camera.position);
-                    currentDirc = vscale(1/120,normalize(currentDirc));
-
-
-                    switch(event.keyCode){
-
-                        case 87 : //key w
-                        mySphere.velocity = add(mySphere.velocity, currentDirc);
-                        break;
-                        case 83 : //key s
-                        mySphere.velocity = add(mySphere.velocity, negate(currentDirc));
-                        break;
-                        case 65 : //key a
-                        var currentLeft = negate(cross(currentDirc,vec4(0,1,0,0)));
-                        mySphere.velocity = add(mySphere.velocity, vec4(currentLeft,0));
-                        break;
-                        case 68 : //key d
-                        var currentRight = cross(currentDirc,vec4(0,1,0,0));
-                        mySphere.velocity = add(mySphere.velocity, vec4(currentRight,0));
-                        break;
-
-                        case 37:  // left arrow
-                        var v3SpherePosition = v4ToV3(mySphere.position);
-                        var v3CameraPosition = v4ToV3(camera.position);
-                        var sphereToCameraVec = subtract(v3CameraPosition,v3SpherePosition);
-                        var v3Vertical = vec3(0,1,0);
-                        var v3Cross = cross(sphereToCameraVec,v3Vertical);
-                        v3Cross = normalize(v3Cross);
-                        v3Cross = vscale(0.05,v3Cross);
-                        var newSphereToCamera = add(sphereToCameraVec, v3Cross);
-                        newSphereToCamera = normalize(newSphereToCamera);
-
-                        newSphereToCamera = vscale(camera.distanceToSphere,newSphereToCamera);
-                        camera.eye = add(v3SpherePosition, newSphereToCamera);
-                        camera.position = vec4(camera.eye, 1);
-                        break;
-                        case 39:  // right arrow
-                        var v3SpherePosition = v4ToV3(mySphere.position);
-                        var v3CameraPosition = v4ToV3(camera.position);
-                        var sphereToCameraVec = subtract(v3CameraPosition,v3SpherePosition);
-                        var v3Vertical = vec3(0,1,0);
-                        var v3Cross = cross(sphereToCameraVec,v3Vertical);
-                        v3Cross = normalize(v3Cross);
-                        v3Cross = negate(vscale(0.05,v3Cross));
-                        var newSphereToCamera = add(sphereToCameraVec, v3Cross);
-                        newSphereToCamera = normalize(newSphereToCamera);
-
-                        newSphereToCamera = vscale(camera.distanceToSphere,newSphereToCamera);
-                        camera.eye = add(v3SpherePosition, newSphereToCamera);
-                        camera.position = vec4(camera.eye, 1);
-                        break;
-
-                        //get into debug mode
-                        case 66:
-                        isDebugMode = true;
-                        break;
-                     }
-
-                    camera.gameSphereViewMatrix = lookAt(camera.eye, camera.at, camera.up);
                 }
+                else{
+                            var currentDirc = vec4(0,0,1,0);
+                            currentDirc = vscale(1/100,normalize(currentDirc));
 
-            }
-            else{
-                    switch(event.keyCode){
-                    case 65:      //key a
-                    break;
-                     case 37:  // left arrow
-                    break;
-                    case 39:  // right arrow
-                    break;
+                            switch(event.keyCode){
+                            case 87 : //key w
+                                tempVelocity = add(mySphere.velocity, currentDirc);
+                                if(length(tempVelocity) <= mySphere.topSpeed)
+                                mySphere.velocity = tempVelocity;
+                            break;
+                            case 83 : //key s
+                                tempVelocity = add(mySphere.velocity, negate(currentDirc));
+                                if(length(tempVelocity) <= mySphere.topSpeed)
+                                mySphere.velocity = tempVelocity;
+                            break;
+                            case 65 : //key a
+                                var currentLeft = negate(cross(currentDirc,vec4(0,1,0,0)));
+                                tempVelocity = add(mySphere.velocity, vec4(currentLeft,0));
+                                if(length(tempVelocity) <= mySphere.topSpeed)
+                                mySphere.velocity = tempVelocity;
+                            break;
+                            case 68 : //key d
+                                var currentRight = cross(currentDirc,vec4(0,1,0,0));
+                                tempVelocity = add(mySphere.velocity, vec4(currentRight,0));
+                                if(length(tempVelocity) <= mySphere.topSpeed)
+                                mySphere.velocity = tempVelocity;
+                            break;
+                            case 66: // key t
+                                isDebugMode = false;
+                            break;
+                            case 84: //key t
+                                isTopMode = false;
+                            break;
+
+                            }
 
                     }
                 }
-            }
             else{
              switch(event.keyCode){
                     case 66 : //exit debug mode
@@ -909,23 +944,12 @@ window.onkeydown = function(event){
 
 
 
-
-
-
-
-
-
-
-
 function testFun(){
 
-    mySphere.modelMatrix = mult(translate(0,-0.45,-5), mySphere.modelMatrix);
-    mySphere.position = vec4(0,-0.45,-5,1);
+    mySphere.modelMatrix = mult(translate(0,-0.45,-3), mySphere.modelMatrix);
+    mySphere.position = vec4(0,-0.45,-3,1);
 
     basePlane.modelMatrix = mult(translate(0,-0.5,0), basePlane.modelMatrix);
-    //camera.gameTopViewMatrix = mult(rotate(90, [1,0,0]), translate(0, -20, 0));
-
-    camera.gameTopViewMatrix = lookAt([0,0,-1],[0,0,-5],[0,1,0]);
 
     camera.viewMatrix = camera.gameTopViewMatrix;
 }

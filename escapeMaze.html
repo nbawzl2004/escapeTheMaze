@@ -32,28 +32,31 @@ void main()
 
     E =  normalize(-pos);
     N = normalize( (normalMatrix*vNormal).xyz);
-    //N = normalize(modelViewMatrix*vNormal).xyz;
 
     H = normalize(L + E);
 
     if(! isPhong){
-    vec4 ambient = ambientProduct;
+        float distance = length(pos - (lightModelViewMatrix* lightPosition).xyz);
+        vec4 ambient = vec4(0,0,0,1);
+        if( distance < 2.0 )
+            ambient = ambientProduct;
+        else
+            ambient = vec4(0,0,0,1);
 
-    float Kd = max( dot(L, N), 0.0 );
-    //float Kd = dot(L, N);
-    vec4  diffuse = Kd*diffuseProduct;
+        float Kd = max( dot(L, N), 0.0 );
+        vec4  diffuse = Kd*diffuseProduct;
 
-    float Ks = pow( max(dot(N, H), 0.0), shininess );
-   // float Ks = pow( dot(N, H), shininess );
-    vec4  specular = Ks * specularProduct;
+        float Ks = pow( max(dot(N, H), 0.0), shininess );
+       // float Ks = pow( dot(N, H), shininess );
+        vec4  specular = Ks * specularProduct;
 
-    if( dot(L, N) < 0.0 ) {
-    specular = vec4(0.0, 0.0, 0.0, 1.0);
-    }
+        if( dot(L, N) < 0.0 ) {
+        specular = vec4(0.0, 0.0, 0.0, 1.0);
+        }
 
-    fColor = ambient + diffuse +specular;
+        fColor = ambient + diffuse +specular;
 
-    fColor.a = 1.0;
+        fColor.a = 1.0;
     }
 
     gl_Position = projectionMatrix * modelViewMatrix * vPosition;
