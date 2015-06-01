@@ -9,6 +9,7 @@ precision mediump float;
 attribute vec4 vPosition;
 attribute vec4 vNormal;
 varying vec3 N, L, E, H;
+uniform mat4 sphereModelMatrix;
 uniform mat4 modelViewMatrix;
 uniform mat4 lightModelViewMatrix;
 uniform mat4 projectionMatrix;
@@ -38,10 +39,25 @@ void main()
     if(! isPhong){
         float distance = length(pos - (lightModelViewMatrix* lightPosition).xyz);
         vec4 ambient = vec4(0,0,0,1);
-        if( distance < 2.0 )
+        /*if( distance < 1.0 )
             ambient = ambientProduct;
-        else
+        else if(distance < 2.0){
+            ambient = 0.5 * ambientProduct;
+            ambient.w = 0.0;
+        }
+        else if(distance < 3.0){
+            ambient = 0.25 * ambientProduct;
+            ambient.w = 0.0;
+        }
+        */
+        if(distance < 5.0){
+            float coef = 1.0 / pow(distance,2.0);
+            ambient = coef * ambientProduct;
+            ambient.w = 1.0;
+        }
+        else{
             ambient = vec4(0,0,0,1);
+        }
 
         float Kd = max( dot(L, N), 0.0 );
         vec4  diffuse = Kd*diffuseProduct;

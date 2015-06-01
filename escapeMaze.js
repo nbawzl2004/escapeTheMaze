@@ -22,7 +22,6 @@ var maze = [
                     ['#',' ',' ',' ',' ',' ','#','#',' ',' '],
                     ['#','#','#','#','#','#','#','#','#','#']
                     ];
-
 //maze translation function
 var translateMaze = function (maze) {
     //translate a 10*10 maze
@@ -142,6 +141,7 @@ myCube.draw = function(position) {
                 gl.uniformMatrix4fv(loc.normalMatrixLoc, false, flatten(myCube.normalMatrix) );
 
                 //light
+                //gl.uniformMatrix4fv(loc.sphereModelMatrixLoc,false,flatten(mySphere.modelMatrix));
                 gl.uniformMatrix4fv(loc.lightModelViewMatrixLoc, false, flatten(mySphere.modelViewMatrix));
                 gl.uniform4fv(loc.lightPositionLoc, flatten(light.position));
 
@@ -383,7 +383,7 @@ mySphere.collisionDetection = function(){
 
 var basePlane = {
 
-    limit : 3000,
+    limit : 300,
     pointsArray : [],
     normalsArray : [],
     ambient : vec4(0.1, 0.1, 0.0, 1.0),
@@ -481,9 +481,6 @@ basePlane.draw = function() {
 
 }
 
-
-
-
 // light Object
 var light = {
     ambient : vec4(1.0, 1.0, 1.0, 1.0 ),
@@ -494,8 +491,6 @@ var light = {
     modelMatrix : mat4(),
     modelViewMatrix : mat4()
 };
-
-
 
 //camera Object
 var camera = {
@@ -521,6 +516,7 @@ var camera = {
 // loc Object, storing locations for everything need to be passed to shader
 var loc = new Object();
 loc.getAllUniformLoc = function(){
+    loc.sphereModelMatrixLoc = gl.getUniformLocation(program, "sphereModelMatrix");
     loc.modelViewMatrixLoc = gl.getUniformLocation( program, "modelViewMatrix" );
     loc.projectionMatrixLoc = gl.getUniformLocation( program, "projectionMatrix" );
     loc.normalMatrixLoc = gl.getUniformLocation( program, "normalMatrix" );
@@ -730,7 +726,6 @@ window.onload = function init() {
     gl.useProgram( program );
 
 
-
     vPosition = gl.getAttribLocation( program, "vPosition" );
     vNormal = gl.getAttribLocation( program, "vNormal" );
     // vColor = gl.getAttribLocation(program, "vColor");
@@ -741,12 +736,8 @@ window.onload = function init() {
     mySphere.init();
     basePlane.init();
 
-
-
     //get Locs
     loc.getAllUniformLoc();
-
-
 
 
     // setup projection matrix
