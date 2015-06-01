@@ -14,6 +14,8 @@ uniform mat4 modelViewMatrix;
 uniform mat4 lightModelViewMatrix;
 uniform mat4 projectionMatrix;
 uniform mat4 normalMatrix;
+uniform mat4 modelMatrix;
+uniform vec4 spherePosition;
 uniform vec4 lightPosition;
 uniform bool isPhong;
 uniform vec4 ambientProduct;
@@ -21,6 +23,7 @@ uniform vec4 diffuseProduct;
 uniform vec4 specularProduct;
 uniform float shininess;
 varying vec4 fColor;
+varying float distance;
 
 void main()
 {
@@ -36,22 +39,15 @@ void main()
 
     H = normalize(L + E);
 
+    //distance = length(pos - (lightModelViewMatrix* lightPosition).xyz);
+    distance = length(modelMatrix * vPosition - spherePosition);
     if(! isPhong){
-        float distance = length(pos - (lightModelViewMatrix* lightPosition).xyz);
         vec4 ambient = vec4(0,0,0,1);
-        /*if( distance < 1.0 )
-            ambient = ambientProduct;
-        else if(distance < 2.0){
-            ambient = 0.5 * ambientProduct;
-            ambient.w = 0.0;
-        }
-        else if(distance < 3.0){
-            ambient = 0.25 * ambientProduct;
-            ambient.w = 0.0;
-        }
-        */
+
         if(distance < 5.0){
             float coef = 1.0 / pow(distance,2.0);
+            if(coef > 1.0)
+                coef = 1.0;
             ambient = coef * ambientProduct;
             ambient.w = 1.0;
         }
@@ -91,6 +87,7 @@ uniform float shininess;
 uniform bool isPhong;
 varying vec3 N, L, E, H;
 varying vec4 fColor;
+varying float distance;
 
 void
 main()
@@ -99,6 +96,18 @@ main()
 
     vec4  fColorTemp;
     vec4 ambient = ambientProduct;
+
+
+        if(distance < 5.0){
+            float coef = 1.0 / pow(distance,2.0);
+            if(coef > 1.0)
+                coef = 1.0;
+            ambient = coef * ambientProduct;
+            ambient.w = 1.0;
+        }
+        else{
+            ambient = vec4(0,0,0,1);
+        }
 
     float Kd = max( dot(L, N), 0.0 );
     vec4  diffuse = Kd*diffuseProduct;

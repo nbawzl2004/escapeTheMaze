@@ -139,6 +139,8 @@ myCube.draw = function(position) {
                 //cube
                 gl.uniformMatrix4fv(loc.modelViewMatrixLoc, false, flatten(myCube.modelViewMatrix) );
                 gl.uniformMatrix4fv(loc.normalMatrixLoc, false, flatten(myCube.normalMatrix) );
+                gl.uniformMatrix4fv(loc.modelMatrixLoc, false, flatten(myCube.tempModelMatrix));
+                gl.uniform4fv(loc.spherePositionLoc, flatten(mySphere.position));
 
                 //light
                 //gl.uniformMatrix4fv(loc.sphereModelMatrixLoc,false,flatten(mySphere.modelMatrix));
@@ -258,6 +260,8 @@ mySphere.draw = function() {
                 //sphere
                 gl.uniformMatrix4fv(loc.modelViewMatrixLoc, false, flatten(mySphere.modelViewMatrix) );
                 gl.uniformMatrix4fv(loc.normalMatrixLoc, false, flatten(mySphere.normalMatrix) );
+                gl.uniformMatrix4fv(loc.modelMatrixLoc, false, flatten(mySphere.modelMatrix));
+                gl.uniform4fv(loc.spherePositionLoc, flatten(mySphere.position));
 
                 //light
                 gl.uniformMatrix4fv(loc.lightModelViewMatrixLoc, false, flatten(mySphere.modelViewMatrix));
@@ -383,10 +387,11 @@ mySphere.collisionDetection = function(){
 
 var basePlane = {
 
-    limit : 300,
+    limit : 0.5,
+    coverRange : 20,
     pointsArray : [],
     normalsArray : [],
-    ambient : vec4(0.1, 0.1, 0.0, 1.0),
+    ambient : vec4(0.3, 0.3, 0.0, 1.0),
     diffuse : vec4(1.0, 1.0, 1.0, 1.0),
     specular : vec4(1.0, 1.0, 1.0, 1.0),
     shininess : 30.0,
@@ -396,7 +401,7 @@ var basePlane = {
     modelMatrix : mat4(),
     modelViewMatrix : mat4(),
     position : vec4(0,0,0,1),
-    vertexNum : 6,
+    vertexNum : 0,
     shadingStyle : 3,  //0:no shading, 1:flat,  2:Gouraud, 3:Phong
     isPhong : true,
 
@@ -410,18 +415,20 @@ var basePlane = {
     };
 //function
 basePlane.init = function(){
-    basePlane.pointsArray = [  vec4( this.limit,0,this.limit,1),
+    basePlane.modelPointsArray = [  vec4( this.limit,0,this.limit,1),
                                                 vec4(this.limit,0,-this.limit,1),
                                                 vec4(-this.limit,0,this.limit,1),
                                                 vec4(-this.limit,0,-this.limit,1),
                                                 vec4(-this.limit,0,this.limit,1),
                                                 vec4(this.limit,0,-this.limit,1) ];
-    basePlane.normalsArray = [   vec4(0,1,0,0),
+    basePlane.modelNormalsArray = [   vec4(0,1,0,0),
                                                     vec4(0,1,0,0),
                                                     vec4(0,1,0,0),
                                                     vec4(0,1,0,0),
                                                     vec4(0,1,0,0),
                                                     vec4(0,1,0,0) ];
+
+    basePlane.transPoints();
 
 
     basePlane.vBuffer = gl.createBuffer();
@@ -451,7 +458,6 @@ basePlane.draw = function() {
     gl.vertexAttribPointer( vNormal, 4, gl.FLOAT, false, 0, 0 );
 
     //*************
-    gl.uniform4fv( loc.lightPositionLoc, flatten(light.position) );
 
     gl.uniform4fv( loc.ambientProductLoc,flatten(basePlane.ambientProduct) );
     gl.uniform4fv( loc.diffuseProductLoc,flatten(basePlane.diffuseProduct) );
@@ -463,23 +469,34 @@ basePlane.draw = function() {
     basePlane.normalMatrix =  transpose(invert4(basePlane.modelViewMatrix));
 
     //*************
-    light.modelViewMatrix = mult(camera.viewMatrix, light.modelMatrix);
-
+    gl.uniform4fv(loc.spherePositionLoc, flatten(mySphere.position));
+    gl.uniformMatrix4fv(loc.modelMatrixLoc, false, flatten(basePlane.modelMatrix));
     gl.uniformMatrix4fv(loc.modelViewMatrixLoc, false, flatten(basePlane.modelViewMatrix) );
     gl.uniformMatrix4fv(loc.normalMatrixLoc, false, flatten(basePlane.normalMatrix) );
 
     //*************
-    gl.uniformMatrix4fv(loc.lightModDSelViewMatrixLoc, false, flatten(mySphere.modelViewMatrix));
+    gl.uniformMatrix4fv(loc.lightModelViewMatrixLoc, false, flatten(mySphere.modelViewMatrix));
     gl.uniform4fv(loc.lightPositionLoc, flatten(light.position));
 
     //projection matrix
     gl.uniformMatrix4fv(loc.projectionMatrixLoc, false, flatten(camera.projectionMatrix) );
 
-    for(var j=0; j < basePlane.vertexNum; j+=3){
+    for(var j=0; j < basePlane.pointsArray.length; j+=3){
                     gl.drawArrays(gl.TRIANGLES, j, 3);
                 }
-
 }
+
+basePlane.transPoints = function(){
+    for(var i = 0 - basePlane.coverRange; i < basePlane.coverRange;i+= 2*basePlane.limit){
+        for(var j = 0 - basePlane.coverRange; j < basePlane.coverRange; j+=2*basePlane.limit){
+            for(var k=0; k < 6; k++){
+                basePlane.pointsArray.push(multv(translate(i,0,j),basePlane.modelPointsArray[k]));
+                basePlane.normalsArray.push(vec4(0,1,0,0));
+            }
+        }
+    }
+}
+
 
 // light Object
 var light = {
@@ -527,6 +544,8 @@ loc.getAllUniformLoc = function(){
     loc.positionLoc = gl.getUniformLocation(program, "lightPosition");
     loc.shininessLoc =  gl.getUniformLocation(program, "shininess");
     loc.isPhongLoc =  gl.getUniformLocation(program, "isPhong");
+    loc.spherePositionLoc = gl.getUniformLocation(program, "spherePosition");
+    loc.modelMatrixLoc = gl.getUniformLocation(program, "modelMatrix");
 
 }
 
