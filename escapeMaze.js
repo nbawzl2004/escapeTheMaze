@@ -173,6 +173,7 @@ var mySphere = {
     specularProduct : vec4(),
     modelMatrix : mat4(),
     modelViewMatrix : mat4(),
+    rollMatrix : mat4(),
 
     complexity : 5,
     radius : 0.05,
@@ -252,7 +253,8 @@ mySphere.draw = function() {
 
 
                 //intergrate modelview matrix
-                mySphere.modelViewMatrix = mult(camera.viewMatrix, mySphere.modelMatrix);
+                mySphere.modelViewMatrix = mult(mySphere.modelMatrix, mySphere.rollMatrix);
+                mySphere.modelViewMatrix = mult(camera.viewMatrix, mySphere.modelViewMatrix);
                 mySphere.normalMatrix =  transpose(invert4(mySphere.modelViewMatrix));
                 light.modelViewMatrix = mult(camera.viewMatrix, light.modelMatrix);
 
@@ -270,9 +272,15 @@ mySphere.draw = function() {
                 //projection matrix
                 gl.uniformMatrix4fv(loc.projectionMatrixLoc, false, flatten(camera.projectionMatrix) );
 
+                var tempAmbientProduct = mySphere.ambientProduct.slice();
+
                 //draw sphere
                     for(var j=0; j < mySphere.vertexNum; j+=3){
-                    gl.drawArrays(gl.TRIANGLES, j, 3);
+                        //change color of vertices
+                        tempAmbientProduct[0] -= 1/mySphere.vertexNum;
+                        gl.uniform4fv( loc.ambientProductLoc,flatten(tempAmbientProduct) );
+                        //
+                        gl.drawArrays(gl.TRIANGLES, j, 3);
                 }
             }
 
@@ -280,6 +288,7 @@ mySphere.move = function(){
 
     mySphere.collisionDetection();
 
+    mySphere.roll();
     mySphere.position = add(mySphere.position,mySphere.velocity);
 
     var vx = mySphere.velocity[0], vy = mySphere.velocity[1], vz = mySphere.velocity[2];
@@ -309,8 +318,6 @@ mySphere.move = function(){
         var adjustedSphereViewMatrix = mult(translate(0,-0.1,0),camera.gameSphereViewMatrix);
         camera.viewMatrix = adjustedSphereViewMatrix;
     }
-
-
 }
 
 mySphere.collisionDetection = function(){
@@ -381,6 +388,24 @@ mySphere.collisionDetection = function(){
     }
 
     return isCollided;
+}
+mySphere.roll = function(){
+    /*
+    var xRollMatrix =  rotate(mySphere.velocity[0] / mySphere.radius *360/Math.PI, [0,1,0]);
+    var zRollMatrix = rotate(mySphere.velocity[2] / mySphere.radius * 360/Math.PI, [1,0,0]);
+    var rollMatrix = mult(xRollMatrix, zRollMatrix);
+    mySphere.modelMatrix = mult(mySphere.modelMatrix, rollMatrix);
+    */
+
+    var axis = cross(mySphere.velocity, vec4(0,-1,0,0));
+    var speed = length(mySphere.velocity);
+    var angleSpeed = speed / mySphere.radius *360/Math.PI;
+    if(angleSpeed != 0)
+    var rollMatrix = rotate(angleSpeed, axis);
+    else
+    var rollMatrix = mat4();
+
+    mySphere.rollMatrix = mult(rollMatrix, mySphere.rollMatrix);
 
 }
 
@@ -831,7 +856,7 @@ window.onkeydown = function(event){
                             var v3Vertical = vec3(0,1,0);
                             var v3Cross = cross(sphereToCameraVec,v3Vertical);
                             v3Cross = normalize(v3Cross);
-                            v3Cross = vscale(0.05,v3Cross);
+                            v3Cross = vscale(0.08,v3Cross);
                             var newSphereToCamera = add(sphereToCameraVec, v3Cross);
                             newSphereToCamera = normalize(newSphereToCamera);
 
@@ -846,7 +871,7 @@ window.onkeydown = function(event){
                             var v3Vertical = vec3(0,1,0);
                             var v3Cross = cross(sphereToCameraVec,v3Vertical);
                             v3Cross = normalize(v3Cross);
-                            v3Cross = negate(vscale(0.05,v3Cross));
+                            v3Cross = negate(vscale(0.08,v3Cross));
                             var newSphereToCamera = add(sphereToCameraVec, v3Cross);
                             newSphereToCamera = normalize(newSphereToCamera);
 
