@@ -274,6 +274,7 @@ mySphere.draw = function() {
 mySphere.move = function(){
 
     mySphere.collisionDetection();
+
     mySphere.position = add(mySphere.position,mySphere.velocity);
 
     var vx = mySphere.velocity[0], vy = mySphere.velocity[1], vz = mySphere.velocity[2];
@@ -304,6 +305,7 @@ mySphere.move = function(){
         camera.viewMatrix = adjustedSphereViewMatrix;
     }
 
+
 }
 
 mySphere.collisionDetection = function(){
@@ -313,58 +315,67 @@ mySphere.collisionDetection = function(){
     var alfa = b/Math.sqrt(2);
     var c = Math.sqrt(a*a + alfa*alfa) + alfa; // c is LargestDistanceToCollde
     //test
-    c = a + b;
+    c = a + b + mySphere.radius;
     //
     var halfSide = myCube.side / 2;
+    var isCollided = false;
 
+
+    var sphereFuturePosition = add(mySphere.position, mySphere.velocity);
 
     for (var k=0;k<cubePosition.length;k++) {
         var cPosition = cubePosition[k].slice();
         cPosition[1] = -0.45;
 
 
-        if(distance(cPosition, mySphere.position) <= c){
+        if(distance(cPosition, sphereFuturePosition) < c){
 
             var frontPoint = add(cPosition , vec4(0,0,halfSide,0));
             var backPoint = add(cPosition , vec4(0,0,-halfSide,0));
             var leftPoint = add(cPosition , vec4(-halfSide,0,0,0));
             var rightPoint = add(cPosition , vec4(halfSide,0,0,0));
 
-            var sToFront = distance(mySphere.position, frontPoint);
-            var sToBack = distance(mySphere.position, backPoint);
-            var sToLeft = distance(mySphere.position, leftPoint);
-            var sToRight = distance(mySphere.position, rightPoint);
+            var sToFront = distance(sphereFuturePosition, frontPoint);
+            var sToBack = distance(sphereFuturePosition, backPoint);
+            var sToLeft = distance(sphereFuturePosition, leftPoint);
+            var sToRight = distance(sphereFuturePosition, rightPoint);
 
             if(sToFront <= sToBack && sToFront <= sToLeft && sToFront <= sToRight ){
-                if((mySphere.position[2] - frontPoint[2] ) <= mySphere.radius){
+                if((sphereFuturePosition[2] - frontPoint[2] ) <= mySphere.radius){
                     //find Collision!
                     mySphere.velocity[2] = -mySphere.velocity[2];
+                    isCollided =  true;
                 }
             }
 
             if(sToBack <= sToFront && sToBack <= sToLeft && sToBack <= sToRight ){
-                if((backPoint[2] - mySphere.position[2] ) <= mySphere.radius){
+                if((backPoint[2] - sphereFuturePosition[2] ) <= mySphere.radius){
                     //find Collision!
                     mySphere.velocity[2] = -mySphere.velocity[2];
+                    isCollided =  true;
                 }
             }
 
             if(sToLeft <= sToBack && sToLeft <= sToFront && sToLeft <= sToRight ){
-                if((leftPoint[0] - mySphere.position[0] ) <= mySphere.radius){
+                if((leftPoint[0] - sphereFuturePosition[0] ) <= mySphere.radius){
                     //find Collision!
                     mySphere.velocity[0] = -mySphere.velocity[0];
+                    isCollided =  true;
                 }
             }
 
             if(sToRight < sToBack && sToRight < sToFront && sToRight < sToLeft ){
-                if((mySphere.position[0] - rightPoint[0] ) <= mySphere.radius){
+                if((sphereFuturePosition[0] - rightPoint[0] ) <= mySphere.radius){
                     //find Collision!
                     mySphere.velocity[0] = -mySphere.velocity[0];
+                    isCollided =  true;
                 }
             }
 
         }
     }
+
+    return isCollided;
 
 }
 
