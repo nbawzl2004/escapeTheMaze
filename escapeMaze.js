@@ -176,7 +176,7 @@ var mySphere = {
     radius : 0.05,
     velocity : vec4(0,0,1/60,0),
     fractionConstant : 1/1500,
-    topSpeed : 1/20
+    topSpeed : 1/30
 
 
     /* object and functions
@@ -312,6 +312,9 @@ mySphere.collisionDetection = function(){
     var a = cubeHalfDiagonal, b = mySphere.radius;
     var alfa = b/Math.sqrt(2);
     var c = Math.sqrt(a*a + alfa*alfa) + alfa; // c is LargestDistanceToCollde
+    //test
+    c = a + b;
+    //
     var halfSide = myCube.side / 2;
 
 
