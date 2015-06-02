@@ -8,6 +8,7 @@ var isDebugMode = false;
 var isTopMode = false;
 var image = [];
 var image_world;
+var textureNum = 11;
 
 //cube Position should be a vec4 and relative to the center
 var cubePosition = [];
@@ -141,7 +142,7 @@ myCube.init = function() {
 
                 myCube.texture = [];
 
-                for(var k=0; k < 10; k++){
+                for(var k=0; k < textureNum; k++){
                 image.push(document.getElementById("texImage" + k.toString()));
                 myCube.texture .push(gl.createTexture());
                 gl.bindTexture( gl.TEXTURE_2D, myCube.texture[k] );
@@ -952,7 +953,7 @@ function render(){
 
     for (var i = 0; i < cubePosition.length; i++)
     {
-        myCube.draw(cubePosition[i], myCube.texture[i%10]);
+        myCube.draw(cubePosition[i], myCube.texture[i%textureNum]);
     }
     //draw the large Cube
     myCube.drawBig();
