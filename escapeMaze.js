@@ -17,7 +17,7 @@ var maze = [
                     ['#','#','#','#','#','#','#','#','#','#'],
                     ['#',' ',' ',' ',' ',' ',' ','#',' ','#'],
                     ['#',' ','#',' ','#','#',' ','#',' ','#'],
-                    [' ',' ','#',' ','#','#',' ','#',' ','#'],
+                    ['#',' ','#',' ','#','#',' ','#',' ','#'],
                     ['#','#','#',' ','#','#',' ',' ',' ','#'],
                     ['#','#','#',' ','#','#','#','#',' ','#'],
                     ['#',' ',' ',' ','#',' ','#','#',' ','#'],
@@ -309,7 +309,7 @@ var mySphere = {
 
     complexity : 5,
     radius : 0.05,
-    velocity : vec4(0,0,1/60,0),
+    velocity : vec4(0,0,0,0),
     fractionConstant : 1/3000,
     topSpeed : 1/30
 
@@ -358,11 +358,17 @@ mySphere.init = function() {
 
                 mySphere.modelMatrix = mult(scale(mySphere.radius,mySphere.radius,mySphere.radius),mat4());
 
-                camera.position = add(mySphere.position, vec4(0,0,-camera.distanceToSphere,0));
+                mySphere.modelMatrix = mult(translate(2.7,-0.45,1.0), mySphere.modelMatrix);
+                mySphere.position = vec4(2.7,-0.45,1.0);
+
+                camera.position = add(mySphere.position, vec4(camera.distanceToSphere,0,0,0));
                 camera.eye = v4ToV3(camera.position);
                 camera.at = v4ToV3(mySphere.position);
                 camera.up = vec3(0,1,0);
                 camera.gameTopViewMatrix = lookAt([4,20,4],[4,0,4],[0,0,1]);
+
+
+
         }
 
 mySphere.draw = function() {
@@ -611,6 +617,8 @@ basePlane.init = function(){
     basePlane.ambientProduct = mult(basePlane.ambient, light.ambient);
     basePlane.diffuseProduct = mult(basePlane.diffuse, light.diffuse);
     basePlane.specularProduct = mult(basePlane.specular, light.specular);
+
+    basePlane.modelMatrix = mult(translate(0,-0.5,0), basePlane.modelMatrix);
 }
 
 basePlane.draw = function() {
@@ -927,7 +935,6 @@ window.onload = function init() {
     // setup projection matrix
      camera.projectionMatrix = perspective(camera.fovy, camera.aspect, camera.near, camera.far);
 
-     testFun();
 
     render();
 
@@ -1122,12 +1129,3 @@ window.onkeydown = function(event){
 
 
 
-function testFun(){
-
-    mySphere.modelMatrix = mult(translate(0,-0.45,-3), mySphere.modelMatrix);
-    mySphere.position = vec4(0,-0.45,-3,1);
-
-    basePlane.modelMatrix = mult(translate(0,-0.5,0), basePlane.modelMatrix);
-
-    camera.viewMatrix = camera.gameTopViewMatrix;
-}
