@@ -75,7 +75,7 @@ void main()
         fColor.a = 1.0;
     }
 
-    fTexCoord = vTexCoord;
+    fTexCoord = 2.0 * vTexCoord;
 
     gl_Position = projectionMatrix * modelViewMatrix * vPosition;
 
@@ -165,8 +165,8 @@ main()
 Oops ... your browser doesn't support the HTML5 canvas element
 </canvas>
 
-<img id = "texImage" src="broken_ball.jpg" hidden></img>
-<img id = "texImage2" src="galaxy.gif" hidden> </img>
+<img id = "texImage" src="woodFloor.jpg" hidden></img>
+<img id = "texImage2" src="newGalaxy.jpg" hidden> </img>
 
 </body>
 </html>
