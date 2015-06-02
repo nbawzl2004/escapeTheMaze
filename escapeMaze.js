@@ -8,7 +8,7 @@ var isDebugMode = false;
 var isTopMode = false;
 var image = [];
 var image_world;
-var textureNum = 15;
+var textureNum = 16;
 
 //cube Position should be a vec4 and relative to the center
 var cubePosition = [];
