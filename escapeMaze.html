@@ -108,7 +108,7 @@ main()
 
 
         if(distance < 2.5){
-            float coef = 1.0 / pow(distance,10.0);
+            float coef = 1.0 / pow(distance,3.0);
             if(coef > 1.0)
                 coef = 1.0;
             ambient = coef * ambientProduct;
@@ -136,8 +136,21 @@ main()
 
     else
     {
-    gl_FragColor = 0.5 * texture2D(texture, fTexCoord);
-    gl_FragColor.w = 1.0;
+
+        if(distance < 2.5){
+            float coef = 1.0 / pow(distance,3.0);
+            if(coef > 1.0)
+                coef = 1.0;
+            gl_FragColor = coef * texture2D(texture, fTexCoord);
+            gl_FragColor.w = 1.0;
+        }
+        else if(distance > 50.0){
+            gl_FragColor = texture2D(texture, fTexCoord);
+        }
+        else{
+            gl_FragColor = vec4(0.0,0.0,0.0,1.0);
+        }
+
     }
 }
 </script>
