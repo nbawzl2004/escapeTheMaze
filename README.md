@@ -3,10 +3,8 @@ This repo is for CS174 TermProject  team 27
 #Team Members
 
 Zhengliang Wu
-204134580
 
 Beiqi Guan
-804160726
 
 #Control
 
@@ -37,7 +35,7 @@ right : right
 
 #Collision Detection
 	- Sphere collides with the wall
-	- Detection of collision with a cube is more complicated than expected, 
+	- Detection of collision with a cube is more complicated than expected,
 
 #Maze
 	- Maze is originally a 2D array

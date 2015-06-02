@@ -8,7 +8,8 @@ var isDebugMode = false;
 var isTopMode = false;
 var image = [];
 var image_world;
-var textureNum = 18;
+var textureNum = 19;
+var isTextureOn = false;
 
 //cube Position should be a vec4 and relative to the center
 var cubePosition = [];
@@ -462,7 +463,7 @@ mySphere.move = function(){
     else if(isTopMode)
         camera.viewMatrix = camera.gameTopViewMatrix;
     else{
-        var adjustedSphereViewMatrix = mult(translate(0,-0.1,0),camera.gameSphereViewMatrix);
+        var adjustedSphereViewMatrix = mult(translate(0,-0.3,0),camera.gameSphereViewMatrix);
         camera.viewMatrix = adjustedSphereViewMatrix;
     }
 }
@@ -699,7 +700,7 @@ var camera = {
     gameSphereViewMatrix : mat4(),
     gameTopViewMatrix : mat4(),
     debugViewMatrix : mat4(),
-    distanceToSphere : 0.5,
+    distanceToSphere : 0.9,
 
     //only for gameSphereView
     eye : vec3(),
@@ -954,16 +955,21 @@ function render(){
 
     for (var i = 0; i < cubePosition.length; i++)
     {
-        filter = i;
-        if(i == 50 || i == 63){
-            myCube.draw(cubePosition[i], myCube.texture[10]);
+            if(isTextureOn == true){
+                filter = i;
+                if(i == 50 || i == 63){
+                    myCube.draw(cubePosition[i], myCube.texture[10]);
 
-        }
-        else{
-            if(filter % 10 == 0)
-                filter = i + 5;
-            myCube.draw(cubePosition[i], myCube.texture[filter%textureNum]);
-        }
+                }
+                else{
+                    if(filter % 10 == 0)
+                        filter = i + 5;
+                    myCube.draw(cubePosition[i], myCube.texture[filter%(textureNum-1)]);
+                }
+            }
+            else{
+                myCube.draw(cubePosition[i], myCube.texture[18]);
+            }
     }
     //draw the large Cube
     myCube.drawBig();
@@ -1061,6 +1067,10 @@ window.onkeydown = function(event){
                             case 66:
                             isDebugMode = true;
                             break;
+
+                            case 79: // key o
+                            isTextureOn = !isTextureOn;
+                            break;
                          }
 
                         camera.gameSphereViewMatrix = lookAt(camera.eye, camera.at, camera.up);
@@ -1111,7 +1121,9 @@ window.onkeydown = function(event){
                             camera.at = v4ToV3(mySphere.position);
                             camera.up = vec3(0,1,0);
                             break;
-
+                            case 79: // key o
+                            isTextureOn = !isTextureOn;
+                            break;
                         }
 
                     }
