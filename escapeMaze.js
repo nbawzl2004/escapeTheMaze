@@ -6,8 +6,9 @@ var vNormal;
 var vTexCoord;
 var isDebugMode = false;
 var isTopMode = false;
-var image;
+var image = [];
 var image_world;
+var textureNum = 11;
 
 //cube Position should be a vec4 and relative to the center
 var cubePosition = [];
@@ -63,10 +64,10 @@ var myCube = {
     ],
     vertexNum: 36,
     texCoord: [
-        vec2(0, 0),
         vec2(0, 1),
-        vec2(1, 1),
-        vec2(1, 0)
+        vec2(0, 0),
+        vec2(1, 0),
+        vec2(1, 1)
     ],
     pointsArray : [],
     normalsArray : [],
@@ -76,7 +77,8 @@ var myCube = {
     specularProduct : vec4(),
     modelMatrix : mat4(),
     modelViewMatrix : mat4(),
-    tempModelMatrix: mat4()
+    tempModelMatrix: mat4(),
+
 
 }
 
@@ -136,20 +138,24 @@ myCube.init = function() {
                 myCube.specularProduct = mult(myCube.specular, light.specular);
 
                 //setup texture
-                image = document.getElementById("texImage");
-                image_world = document.getElementById("texImage2");
+                image_world = document.getElementById("texImage100");
 
-                myCube.texture = gl.createTexture();
-                gl.bindTexture( gl.TEXTURE_2D, myCube.texture );
+                myCube.texture = [];
+
+                for(var k=0; k < textureNum; k++){
+                image.push(document.getElementById("texImage" + k.toString()));
+                myCube.texture .push(gl.createTexture());
+                gl.bindTexture( gl.TEXTURE_2D, myCube.texture[k] );
                 gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
                 gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGB,
-                gl.RGB, gl.UNSIGNED_BYTE, image );
+                gl.RGB, gl.UNSIGNED_BYTE, image[k] );
                 gl.generateMipmap( gl.TEXTURE_2D );
                 gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER,
                                   gl.LINEAR_MIPMAP_LINEAR );
                 gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST );
                 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT); //Prevents s-coordinate wrapping (repeating).
                 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT); //Prevents t-coordinate wrapping (repeating).
+                }
 
                 myCube.texture_world = gl.createTexture();
                 gl.bindTexture( gl.TEXTURE_2D, myCube.texture_world );
@@ -165,12 +171,12 @@ myCube.init = function() {
 
         };
 
-myCube.draw = function(position) {
+myCube.draw = function(position, texture ) {
 
                 //make sure vTexCoord is enabled
                 gl.enableVertexAttribArray( vTexCoord);
 
-                gl.bindTexture( gl.TEXTURE_2D, myCube.texture );
+                gl.bindTexture( gl.TEXTURE_2D, texture );
 
                 // bind cube's buffer
                 gl.bindBuffer( gl.ARRAY_BUFFER, myCube.vBuffer );
@@ -366,8 +372,6 @@ mySphere.init = function() {
                 camera.at = v4ToV3(mySphere.position);
                 camera.up = vec3(0,1,0);
                 camera.gameTopViewMatrix = lookAt([4,20,4],[4,0,4],[0,0,1]);
-
-
 
         }
 
@@ -949,7 +953,7 @@ function render(){
 
     for (var i = 0; i < cubePosition.length; i++)
     {
-        myCube.draw(cubePosition[i]);
+        myCube.draw(cubePosition[i], myCube.texture[i%textureNum]);
     }
     //draw the large Cube
     myCube.drawBig();
@@ -1032,6 +1036,16 @@ window.onkeydown = function(event){
                             case 84: //key t
                             isTopMode = true;
                             break;
+                            case 82: //key r
+                            mySphere.velocity = vec4(0,0,0,0);
+                            mySphere.modelMatrix = mult(scale(mySphere.radius,mySphere.radius,mySphere.radius),mat4());
+                            mySphere.modelMatrix = mult(translate(2.7,-0.45,1.0), mySphere.modelMatrix);
+                            mySphere.position = vec4(2.7,-0.45,1.0);
+                            camera.position = add(mySphere.position, vec4(camera.distanceToSphere,0,0,0));
+                            camera.eye = v4ToV3(camera.position);
+                            camera.at = v4ToV3(mySphere.position);
+                            camera.up = vec3(0,1,0);
+                            break;
 
                             //get into debug mode
                             case 66:
@@ -1077,7 +1091,18 @@ window.onkeydown = function(event){
                                 isTopMode = false;
                             break;
 
-                            }
+                            case 82: //key r
+                            mySphere.velocity = vec4(0,0,0,0);
+                            mySphere.modelMatrix = mult(scale(mySphere.radius,mySphere.radius,mySphere.radius),mat4());
+                            mySphere.modelMatrix = mult(translate(2.7,-0.45,1.0), mySphere.modelMatrix);
+                            mySphere.position = vec4(2.7,-0.45,1.0);
+                            camera.position = add(mySphere.position, vec4(camera.distanceToSphere,0,0,0));
+                            camera.eye = v4ToV3(camera.position);
+                            camera.at = v4ToV3(mySphere.position);
+                            camera.up = vec3(0,1,0);
+                            break;
+
+                        }
 
                     }
                 }
