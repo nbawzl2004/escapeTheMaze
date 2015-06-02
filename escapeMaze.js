@@ -7,6 +7,7 @@ var vTexCoord;
 var isDebugMode = false;
 var isTopMode = false;
 var image;
+var image_world;
 
 //cube Position should be a vec4 and relative to the center
 var cubePosition = [];
@@ -136,6 +137,7 @@ myCube.init = function() {
 
                 //setup texture
                 image = document.getElementById("texImage");
+                image_world = document.getElementById("texImage2");
 
                 myCube.texture = gl.createTexture();
                 gl.bindTexture( gl.TEXTURE_2D, myCube.texture );
@@ -148,6 +150,19 @@ myCube.init = function() {
                 gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST );
                 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT); //Prevents s-coordinate wrapping (repeating).
                 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT); //Prevents t-coordinate wrapping (repeating).
+
+                myCube.texture_world = gl.createTexture();
+                gl.bindTexture( gl.TEXTURE_2D, myCube.texture_world );
+                gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+                gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGB, 
+                gl.RGB, gl.UNSIGNED_BYTE, image_world );
+                gl.generateMipmap( gl.TEXTURE_2D );
+                gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, 
+                                  gl.LINEAR_MIPMAP_LINEAR );
+                gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST );
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT); //Prevents s-coordinate wrapping (repeating).
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT); //Prevents t-coordinate wrapping (repeating).
+
         };
 
 myCube.draw = function(position) {
@@ -155,6 +170,7 @@ myCube.draw = function(position) {
                 //make sure vTexCoord is enabled
                 gl.enableVertexAttribArray( vTexCoord);
 
+                gl.bindTexture( gl.TEXTURE_2D, myCube.texture );
 
                 // bind cube's buffer
                 gl.bindBuffer( gl.ARRAY_BUFFER, myCube.vBuffer );
@@ -207,6 +223,69 @@ myCube.draw = function(position) {
                 gl.drawArrays( gl.TRIANGLES, 0, myCube.vertexNum );
 
             };
+
+myCube.drawBig = function() {
+
+                var position = vec4(0,0,0,1);
+
+                //make sure vTexCoord is enabled
+                gl.enableVertexAttribArray( vTexCoord);
+
+                gl.bindTexture( gl.TEXTURE_2D, myCube.texture_world );
+
+
+                // bind cube's buffer
+                gl.bindBuffer( gl.ARRAY_BUFFER, myCube.vBuffer );
+                gl.vertexAttribPointer( vPosition, 4, gl.FLOAT, false, 0, 0);
+                gl.bindBuffer( gl.ARRAY_BUFFER, myCube.nBuffer );
+                gl.vertexAttribPointer( vNormal, 4, gl.FLOAT, false, 0, 0 );
+
+                //texture buffer
+                gl.bindBuffer( gl.ARRAY_BUFFER, myCube.tBuffer);
+                gl.vertexAttribPointer( vTexCoord, 2, gl.FLOAT, false, 0, 0 );
+
+
+                 //transfer values
+                gl.uniform4fv( loc.ambientProductLoc,flatten(myCube.ambientProduct) );
+                gl.uniform4fv( loc.diffuseProductLoc,flatten(myCube.diffuseProduct) );
+                gl.uniform4fv( loc.specularProductLoc,flatten(myCube.specularProduct) );
+                gl.uniform4fv( loc.lightPositionLoc, flatten(light.position) );
+                gl.uniform1f( loc.shininessLoc, myCube.shininess );
+                gl.uniform1i( loc.isPhongLoc, myCube.isPhong );
+
+
+                //transfer texture value
+                gl.uniform1i(gl.getUniformLocation(program, "texture"), 0);
+
+
+                //intergrate modelview matrix
+                //calculate cube's modelMatrix based on position
+
+                myCube.tempModelMatrix = mult(translate(position[0], position[1], position[2]), myCube.modelMatrix);
+                myCube.tempModelMatrix = mult(scale(100, 100, 100), myCube.tempModelMatrix);
+                myCube.modelViewMatrix = mult(camera.viewMatrix, myCube.tempModelMatrix);
+                myCube.normalMatrix =  transpose(invert4(myCube.modelViewMatrix));
+                light.modelViewMatrix = mult(camera.viewMatrix, light.modelMatrix);
+
+                // transfer data
+                //cube
+                gl.uniformMatrix4fv(loc.modelViewMatrixLoc, false, flatten(myCube.modelViewMatrix) );
+                gl.uniformMatrix4fv(loc.normalMatrixLoc, false, flatten(myCube.normalMatrix) );
+                gl.uniformMatrix4fv(loc.modelMatrixLoc, false, flatten(myCube.tempModelMatrix));
+                gl.uniform4fv(loc.spherePositionLoc, flatten(mySphere.position));
+
+                //light
+                //gl.uniformMatrix4fv(loc.sphereModelMatrixLoc,false,flatten(mySphere.modelMatrix));
+                gl.uniformMatrix4fv(loc.lightModelViewMatrixLoc, false, flatten(mySphere.modelViewMatrix));
+                gl.uniform4fv(loc.lightPositionLoc, flatten(light.position));
+
+                //projection matrix
+                gl.uniformMatrix4fv(loc.projectionMatrixLoc, false, flatten(camera.projectionMatrix) );
+
+                //draw cube
+                gl.drawArrays( gl.TRIANGLES, 0, myCube.vertexNum );
+
+};
 
 // Sphere Object
 
@@ -588,8 +667,8 @@ basePlane.transPoints = function(){
 // light Object
 var light = {
     ambient : vec4(1.0, 1.0, 1.0, 1.0 ),
-    diffuse :  vec4( 1.0, 1.0, 1.0, 1.0 ),
-    specular : vec4(1.0, 1.0, 1.0, 1.0 ),
+    diffuse :  vec4( 0.0, 0.0, 0.0, 1.0 ),
+    specular : vec4(0.0, 0.0, 0.0, 1.0 ),
     //position : vec4(0,-0.45,-3,1), //point light
     position : vec4(0,0,1,1),
     modelMatrix : mat4(),
@@ -865,6 +944,9 @@ function render(){
     {
         myCube.draw(cubePosition[i]);
     }
+    //draw the large Cube
+    myCube.drawBig();
+
 
 
     setTimeout(
