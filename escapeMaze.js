@@ -121,7 +121,7 @@ myCube.init = function() {
 
                 ////-----------------------------------------push texture Coords in buffer--------------------------------------
                 gl.bindBuffer( gl.ARRAY_BUFFER, myCube.tBuffer );
-                gl.bufferData( gl.ARRAY_BUFFER, flatten(myCube.texCoordsArray), gl.STATIC_DRAW );  
+                gl.bufferData( gl.ARRAY_BUFFER, flatten(myCube.texCoordsArray), gl.STATIC_DRAW );
 
 
                 gl.vertexAttribPointer( vTexCoord, 2, gl.FLOAT, false, 0, 0 );
@@ -142,10 +142,10 @@ myCube.init = function() {
                 myCube.texture = gl.createTexture();
                 gl.bindTexture( gl.TEXTURE_2D, myCube.texture );
                 gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-                gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGB, 
+                gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGB,
                 gl.RGB, gl.UNSIGNED_BYTE, image );
                 gl.generateMipmap( gl.TEXTURE_2D );
-                gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, 
+                gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER,
                                   gl.LINEAR_MIPMAP_LINEAR );
                 gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST );
                 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT); //Prevents s-coordinate wrapping (repeating).
@@ -154,10 +154,10 @@ myCube.init = function() {
                 myCube.texture_world = gl.createTexture();
                 gl.bindTexture( gl.TEXTURE_2D, myCube.texture_world );
                 gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-                gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGB, 
+                gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGB,
                 gl.RGB, gl.UNSIGNED_BYTE, image_world );
                 gl.generateMipmap( gl.TEXTURE_2D );
-                gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, 
+                gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER,
                                   gl.LINEAR_MIPMAP_LINEAR );
                 gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST );
                 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT); //Prevents s-coordinate wrapping (repeating).
@@ -220,7 +220,7 @@ myCube.draw = function(position) {
                 gl.uniformMatrix4fv(loc.projectionMatrixLoc, false, flatten(camera.projectionMatrix) );
 
                 //draw cube
-                gl.drawArrays( gl.TRIANGLES, 0, myCube.vertexNum );
+                gl.drawArrays( gl.TRIANGLES, 0, myCube.pointsArray.length );
 
             };
 
@@ -283,7 +283,7 @@ myCube.drawBig = function() {
                 gl.uniformMatrix4fv(loc.projectionMatrixLoc, false, flatten(camera.projectionMatrix) );
 
                 //draw cube
-                gl.drawArrays( gl.TRIANGLES, 0, myCube.vertexNum );
+                gl.drawArrays( gl.TRIANGLES, 0, myCube.pointsArray.length );
 
 };
 
@@ -553,7 +553,7 @@ var basePlane = {
     coverRange : 20,
     pointsArray : [],
     normalsArray : [],
-    ambient : vec4(0.3, 0.3, 0.0, 1.0),
+    ambient : vec4(0.0, 0.5, 0.5, 1.0),
     diffuse : vec4(1.0, 1.0, 1.0, 1.0),
     specular : vec4(1.0, 1.0, 1.0, 1.0),
     shininess : 30.0,

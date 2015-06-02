@@ -49,9 +49,9 @@ void main()
         vec4 ambient = vec4(0,0,0,1);
 
         if(distance < 5.0){
-            float coef = 1.0 / pow(distance,2.0);
-            if(coef > 1.0)
-                coef = 1.0;
+            float coef = 1.0 / pow(distance,10.0);
+            if(coef > 2.0)
+                coef = 2.0;
             ambient = coef * ambientProduct;
             ambient.w = 1.0;
         }
@@ -108,7 +108,7 @@ main()
 
 
         if(distance < 2.5){
-            float coef = 1.0 / pow(distance,3.0);
+            float coef = 1.0 / pow(distance,2.0);
             if(coef > 1.0)
                 coef = 1.0;
             ambient = coef * ambientProduct;
