@@ -8,7 +8,7 @@ var isDebugMode = false;
 var isTopMode = false;
 var image = [];
 var image_world;
-var textureNum = 16;
+var textureNum = 18;
 
 //cube Position should be a vec4 and relative to the center
 var cubePosition = [];
@@ -950,10 +950,20 @@ function render(){
 
     mySphere.draw();
     basePlane.draw();
+    var filter = 0;
 
     for (var i = 0; i < cubePosition.length; i++)
     {
-        myCube.draw(cubePosition[i], myCube.texture[i%textureNum]);
+        filter = i;
+        if(i == 50 || i == 63){
+            myCube.draw(cubePosition[i], myCube.texture[10]);
+
+        }
+        else{
+            if(filter % 10 == 0)
+                filter = i + 5;
+            myCube.draw(cubePosition[i], myCube.texture[filter%textureNum]);
+        }
     }
     //draw the large Cube
     myCube.drawBig();
